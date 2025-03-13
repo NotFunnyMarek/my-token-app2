@@ -1,0 +1,188 @@
+:root {
+    /* Proměnná pro pomalejší animace */
+    --transition-slow: 0.6s;
+  }
+  
+  /* Hlavní kontejner stránky */
+  .phantom-note-container {
+    border: 2px solid transparent;
+    border-radius: 25px;
+    padding: 5rem;
+    /* Gradient na pozadí a gradientový rámeček */
+    background-image:
+      linear-gradient(45deg, #111013, #121418), 
+      linear-gradient(45deg, #dce8fa, #d2d6e0);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    /* Jemný stín */
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.048);
+    filter: drop-shadow(5px 5px 20px rgba(110, 103, 119, 0.034));
+    /* Animace při načtení */
+    animation: fadeIn var(--transition-slow) ease-in-out;
+    margin: 1rem auto;
+    width: 100%;
+    color: #fff;
+    text-align: left;
+    font-family: "Be Vietnam Pro", sans-serif;
+  }
+  
+  /* Animace zobrazení */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Nadpis 1 */
+  .phantom-note-container h1 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #ffffff;
+    font-weight: 700;
+  }
+  
+  /* Jednotlivé sekce */
+  .phantom-note-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  
+  /* Nadpis 2 */
+  .phantom-note-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    color: #dbe8fc;
+    font-weight: 600;
+  }
+  
+  /* Odstavce */
+  .phantom-note-container p {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    font-weight: 200;
+    margin-bottom: 1rem;
+    color: #c9c9c9e1;
+  }
+
+  .redpink{
+    background-color: #d8d0c728;  /* tmavší modrozelené pozadí */
+    color: #e27934;
+    font-size: 0.8rem;
+  }
+
+  li {
+    font-size: 0.8rem;
+    color: #c9c9c9e1;
+  }
+  
+  /* Odkazy a tučné písmo */
+  .phantom-note-container a {
+    color: #ff9b6d;
+    text-decoration: none;
+  }
+  .phantom-note-container a:hover {
+    text-decoration: underline;
+  }
+  .phantom-note-container strong {
+    color: #ffffff;
+  }
+  
+  /* Seznamy */
+  .phantom-note-container ul {
+    list-style: disc;
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+    color: #d6d6d6;
+  }
+  .phantom-note-container li {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Blok s "Great news" a zelenou fajfkou */
+  .phantom-note-alert {
+    display: flex;
+    align-items: flex-start;
+    background: #14261c;
+    border-left: 4px solid #34d399;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border-radius: 6px;
+  }
+  
+  .phantom-note-alert svg {
+    margin-right: 0.75rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  
+  .phantom-note-alert p {
+    margin: 0;
+    color: #a3e3c5;
+    line-height: 1.4;
+  }
+  
+  /* Blok pro signAndSendTransaction (ukázka kódu) */
+  .phantom-note-codeblock {
+    background-color: #1a1a1a;  /* tmavé pozadí */
+    color: #e2e2e2;           /* světlejší text */
+    padding: 1.5rem;
+    border-radius: 8px;
+    font-family: 'Source Code Pro', monospace;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+  }
+  
+  .phantom-note-codeblock pre {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+  
+  /* Blok pro Our Commitment to Security */
+  .phantom-note-highlight {
+    background-color: #212327d8;  /* tmavší modrozelené pozadí */
+    color: #dadada;
+    padding: 1rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+  }
+
+  .phantom-note-highlight2 {
+    background-color: #233a415d;  /* tmavší modrozelené pozadí */
+    color: #c8d1d8;
+    font-size: 0.8rem;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  /* Responsivní úpravy pro mobily */
+  @media (max-width: 768px) {
+    .phantom-note-container {
+      margin: 1rem auto;
+      padding: 1rem;
+    }
+  
+    .phantom-note-container h1 {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+    }
+  
+    .phantom-note-section h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+  
+    .phantom-note-container p,
+    .phantom-note-container li {
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+  }
+  

@@ -1,5 +1,5 @@
 /* global BigInt */
-import React, { useState, useMemo, createContext, useContext, useEffect } from 'react';
+import React, { useState, createContext, useContext, useEffect } from 'react';
 import { Buffer } from 'buffer';
 import logo from './Fra6me 5925.png';
 import { ReactComponent as UploadIcon } from './upload-icon.svg';
@@ -9,9 +9,8 @@ import {
   PublicKey,
   Transaction,
   SystemProgram,
-  Keypair,
-  TransactionInstruction,
   LAMPORTS_PER_SOL,
+  TransactionInstruction,
 } from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
@@ -32,16 +31,30 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 
-import TrendingPage from './Trending'; // Nová stránka s trending coiny
+import TrendingPage from './Trending';
+import AffiliateDashboard from './affiliate';
+import PhantomNote from './phantom-note'; // cesta podle umístění souboru
 import '@solana/wallet-adapter-react-ui/styles.css';
 import './app.css';
 
-// Buffer nastavení pro prohlížeče
+// Nastavení Bufferu pro prohlížeče
 window.Buffer = Buffer;
 
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'
 );
+
+// Pomocná funkce pro získání cookie
+function getCookie(name) {
+  let nameEQ = name + "=";
+  let ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
 
 // ================ CUSTOM INSTRUCTION: REVOKE AUTHORITY ================
 function createRevokeAuthorityInstruction(
@@ -68,7 +81,7 @@ const NotificationProvider = ({ children }) => {
   const addNotification = ({ type, message }) => {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, type, message }]);
-    // Po 3s se notifikace skryje
+    // Notifikace se po 3 sekundách odstraní
     setTimeout(() => {
       setNotifications((prev) => prev.filter((notif) => notif.id !== id));
     }, 3000);
@@ -101,27 +114,26 @@ const Header = () => {
 
   const handleReload = (e) => {
     e.preventDefault();
-    navigate('/'); // Přejdeme na Create Token stránku
+    navigate('/'); // Přesměrujeme na Create Token stránku
     window.location.reload();
   };
 
   return (
     <header className="header">
       <div className="header-top">
-        <p>
-          SOLANA GIVEAWAY ON 1.1K FOLLOWERS ON OUR{' '}
-          <a className="afooter" href="https://www.tiktok.com/@coincreate_org">
-            TIKTOK COINCREATE
-          </a>
+        <p className='headerr'>
+        <Link  to="/note" style={{textDecoration: 'none', color: 'inherit'}}>
+        ⚡ OFFICIALLY WHITELISTED BY PHANTOM! "VIEW MORE" ⚡
+          </Link>
         </p>
       </div>
       <div className="header-inner">
-      <Link to="/" style={{ textDecoration: 'none' }}>
-  <div className="header-left">
-    <img src={logo} alt="Logo" className="logo-img" />
-    <span className="brand-name">CoinCreate</span>
-  </div>
-</Link>
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <div className="header-left">
+            <img src={logo} alt="Logo" className="logo-img" />
+            <span className="brand-name">CoinCreate</span>
+          </div>
+        </Link>
 
         {/* Desktop menu */}
         <div className="desktop-menu">
@@ -131,6 +143,9 @@ const Header = () => {
             </a>
             <Link to="/trending" className="header-button">
               Trending <span className="new-tag">New</span>
+            </Link>
+            <Link to="/affiliate" className="header-button">
+              Ambasador Program <span className="hot-tag">Popular</span>
             </Link>
             <a
               href="https://raydium.io/liquidity/create-pool/"
@@ -168,6 +183,13 @@ const Header = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Trending <span className="new-tag">New</span>
+            </Link>
+            <Link
+              to="/affiliate"
+              className="header-button"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Ambasador Program <span className="hot-tag">Popular</span>
             </Link>
             <a
               href="https://raydium.io/liquidity/create-pool/"
@@ -254,10 +276,11 @@ const FAQSection = () => {
   );
 };
 
-// ================ COIN HISTORY (UPRAVENÁ verze) ================
+// ================ COIN HISTORY ================
 const CoinHistory = () => {
   const { publicKey } = useWallet();
   const [history, setHistory] = useState([]);
+  const { addNotification } = useNotification();
 
   useEffect(() => {
     if (publicKey) {
@@ -273,6 +296,7 @@ const CoinHistory = () => {
 
   const handleCopy = (mintAddress) => {
     navigator.clipboard.writeText(mintAddress);
+    addNotification({ type: 'success', message: 'Copied!' });
   };
 
   const handleDelete = (index) => {
@@ -291,7 +315,7 @@ const CoinHistory = () => {
     <div className="coin-history">
       <h2>Your Created Coins</h2>
       {history.length === 0 ? (
-        <p className='phistory'>No coins created yet.</p>
+        <p className="phistory">No coins created yet.</p>
       ) : (
         <>
           <div className="coin-history-list">
@@ -333,10 +357,6 @@ const CoinHistory = () => {
 };
 
 // ================ FUNKCE: CREATE COIN ON SOLANA ================
-/**
- * Exportovaná funkce, kterou voláme i z TrendingPage.
- * Vytvoří SPL token s parametry (name, symbol, decimals, supply, description, imageUri, ...).
- */
 export async function createCoinOnSolana({
   publicKey,
   signAndSendTransaction,
@@ -360,7 +380,7 @@ export async function createCoinOnSolana({
     const walletKey = new PublicKey(publicKey.toString());
     const connection = new Connection(endpoint, 'confirmed');
 
-    // Zkontrolujeme, jestli má peněženka dost SOL
+    // Kontrola dostatečného SOL na poplatky
     const balance = await connection.getBalance(walletKey);
     if (balance < 0.118 * LAMPORTS_PER_SOL) {
       addNotification({
@@ -377,7 +397,7 @@ export async function createCoinOnSolana({
       return { success: false, message: 'Missing Pinata API keys.' };
     }
 
-    // Vytvoříme metadata JSON
+    // Vytvoření metadata JSON a nahrání na Pinata
     const metadataJSON = {
       name: tokenName,
       symbol: tokenSymbol,
@@ -399,7 +419,6 @@ export async function createCoinOnSolana({
       },
     };
 
-    // Nahrajeme JSON na IPFS
     const metadataResponse = await axios.post(
       'https://api.pinata.cloud/pinning/pinJSONToIPFS',
       metadataJSON,
@@ -413,15 +432,17 @@ export async function createCoinOnSolana({
     const metadataHash = metadataResponse.data.IpfsHash;
     const metadataUri = `https://ipfs.io/ipfs/${metadataHash}`;
 
-    // Vytvoření mintu
-    const mintKeypair = Keypair.generate();
+    // Derivace mint účtu pomocí createAccountWithSeed
+    const seed = tokenSymbol.toLowerCase() + "_" + Date.now().toString().slice(-6);
+    const mintPubkey = await PublicKey.createWithSeed(walletKey, seed, TOKEN_PROGRAM_ID);
+
     const lamports = await connection.getMinimumBalanceForRentExemption(MintLayout.span);
     const transaction = new Transaction();
     transaction.feePayer = walletKey;
-    const { blockhash } = await connection.getLatestBlockhash();
+    let { blockhash } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
-    // 0.1 SOL poplatek
+    // Poplatek 0.1 SOL
     transaction.add(
       SystemProgram.transfer({
         fromPubkey: walletKey,
@@ -430,11 +451,13 @@ export async function createCoinOnSolana({
       })
     );
 
-    // Vytvoření účtu pro Mint
+    // Vytvoření mint účtu pomocí createAccountWithSeed
     transaction.add(
-      SystemProgram.createAccount({
+      SystemProgram.createAccountWithSeed({
         fromPubkey: walletKey,
-        newAccountPubkey: mintKeypair.publicKey,
+        newAccountPubkey: mintPubkey,
+        basePubkey: walletKey,
+        seed: seed,
         space: MintLayout.span,
         lamports,
         programId: TOKEN_PROGRAM_ID,
@@ -444,7 +467,7 @@ export async function createCoinOnSolana({
     // Inicializace mintu
     transaction.add(
       createInitializeMintInstruction(
-        mintKeypair.publicKey,
+        mintPubkey,
         Number(decimals),
         walletKey,
         walletKey
@@ -453,7 +476,7 @@ export async function createCoinOnSolana({
 
     // Vytvoření Associated Token Account
     const associatedTokenAddress = await getAssociatedTokenAddress(
-      mintKeypair.publicKey,
+      mintPubkey,
       walletKey
     );
     transaction.add(
@@ -461,16 +484,16 @@ export async function createCoinOnSolana({
         walletKey,
         associatedTokenAddress,
         walletKey,
-        mintKeypair.publicKey
+        mintPubkey
       )
     );
 
-    // Mintneme supply
+    // Mintnutí tokenů
     const decimalsNum = Number(decimals);
     const supplyAmount = BigInt(supply) * (10n ** BigInt(decimalsNum));
     transaction.add(
       createMintToInstruction(
-        mintKeypair.publicKey,
+        mintPubkey,
         associatedTokenAddress,
         walletKey,
         supplyAmount
@@ -482,7 +505,7 @@ export async function createCoinOnSolana({
       [
         Buffer.from('metadata'),
         TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-        mintKeypair.publicKey.toBuffer(),
+        mintPubkey.toBuffer(),
       ],
       TOKEN_METADATA_PROGRAM_ID
     );
@@ -506,7 +529,7 @@ export async function createCoinOnSolana({
       createCreateMetadataAccountV3Instruction(
         {
           metadata: metadataPDA,
-          mint: mintKeypair.publicKey,
+          mint: mintPubkey,
           mintAuthority: walletKey,
           payer: walletKey,
           updateAuthority: walletKey,
@@ -521,11 +544,11 @@ export async function createCoinOnSolana({
       )
     );
 
-    // Případné revoke
+    // Přidání revoke instrukcí
     if (revokeMint) {
       transaction.add(
         createRevokeAuthorityInstruction(
-          mintKeypair.publicKey,
+          mintPubkey,
           walletKey,
           AuthorityType.MintTokens
         )
@@ -534,7 +557,7 @@ export async function createCoinOnSolana({
     if (revokeFreeze) {
       transaction.add(
         createRevokeAuthorityInstruction(
-          mintKeypair.publicKey,
+          mintPubkey,
           walletKey,
           AuthorityType.FreezeAccount
         )
@@ -559,37 +582,55 @@ export async function createCoinOnSolana({
       );
     }
 
-    // Podepíšeme s mintKeypair
-    transaction.partialSign(mintKeypair);
-
-    // Odeslání transakce
-    let txResponse;
-    if (signAndSendTransaction) {
-      txResponse = await signAndSendTransaction(transaction);
-    } else if (signTransaction) {
+    // Odeslání transakce – nejprve pokusíme odeslat pomocí signAndSendTransaction
+    let txId;
+    if (signAndSendTransaction && typeof signAndSendTransaction === 'function') {
+      try {
+        const txResponse = await signAndSendTransaction(transaction);
+        txId = txResponse.signature;
+      } catch (error) {
+        if (error.message && error.message.includes('Blockhash not found')) {
+          // Pokud blockhash není nalezen, získáme nový a zkusíme transakci znovu
+          const latest = await connection.getLatestBlockhash();
+          transaction.recentBlockhash = latest.blockhash;
+          const txResponse = await signAndSendTransaction(transaction);
+          txId = txResponse.signature;
+        } else {
+          throw error;
+        }
+      }
+    } else if (signTransaction && typeof signTransaction === 'function') {
       const signedTx = await signTransaction(transaction);
-      const txId = await connection.sendRawTransaction(signedTx.serialize());
-      await connection.confirmTransaction(txId, 'confirmed');
-      txResponse = { signature: txId };
+      txId = await connection.sendRawTransaction(signedTx.serialize());
     } else {
-      addNotification({
-        type: 'error',
-        message: 'Wallet does not support transaction signing.',
-      });
-      return { success: false, message: 'No signing method.' };
+      throw new Error('No transaction signing method available.');
     }
 
-    const txId = txResponse.signature;
-    const mintAddressStr = mintKeypair.publicKey.toBase58();
+    const mintAddressStr = mintPubkey.toBase58();
 
-    // Uložení historie vytvořených coinů do localStorage (přidali jsme i imageUri)
+    // Affiliate logika
+    const affiliateId = getCookie("affiliateId");
+    if (affiliateId) {
+      axios.post("https://app.byxbot.com/php/links.php", {
+        affiliateId: affiliateId,
+        action: "coinCreated",
+        walletAddress: walletKey.toBase58()
+      })
+        .then(response => {
+          console.log("Affiliate updated", response.data);
+          document.cookie = "affiliateId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        })
+        .catch(err => console.error("Error updating affiliate count:", err));
+    }
+
+    // Uložení historie vytvořených coinů do localStorage
     const historyKey = `coinHistory_${walletKey.toBase58()}`;
     const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
     existingHistory.push({
       mintAddress: mintAddressStr,
       tokenName,
       tokenSymbol,
-      imageUri, // nová vlastnost pro zobrazení obrázku
+      imageUri,
       createdAt: Date.now(),
     });
     localStorage.setItem(historyKey, JSON.stringify(existingHistory));
@@ -608,12 +649,34 @@ export async function createCoinOnSolana({
   }
 }
 
+// ================ PROGRESS BAR ================
+const ProgressBar = ({ currentStep, progressPercent }) => {
+  const steps = [1, 2, 3, 4, 5];
+  return (
+    <div className="progress-bar-wrapper">
+      <div className="progress-bar-track">
+        <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
+      </div>
+      <div className="progress-steps">
+        {steps.map((step) => (
+          <div
+            key={step}
+            className={`progress-step ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}
+          >
+            <span>{step}</span>
+          </div>
+        ))}
+      </div>
+      <div className="progress-text">Step {currentStep} of 5</div>
+    </div>
+  );
+};
+
 // ================ CREATE TOKEN FORM ================
 const CreateTokenForm = ({ endpoint }) => {
   const { publicKey, signAndSendTransaction, signTransaction } = useWallet();
   const { addNotification } = useNotification();
 
-  // Formulářová data
   const [tokenName, setTokenName] = useState('');
   const [tokenSymbol, setTokenSymbol] = useState('');
   const [decimals, setDecimals] = useState('9');
@@ -637,7 +700,6 @@ const CreateTokenForm = ({ endpoint }) => {
 
   const progressPercent = ((currentStep - 1) / 4) * 100;
 
-  // Nahrávání obrázku na Pinata
   const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
@@ -747,7 +809,6 @@ const CreateTokenForm = ({ endpoint }) => {
     setCurrentStep((prev) => prev - 1);
   };
 
-  // Odeslání formuláře -> voláme createCoinOnSolana
   const handleSubmit = async () => {
     if (!publicKey) {
       addNotification({ type: 'error', message: 'Please connect your wallet first!' });
@@ -780,6 +841,74 @@ const CreateTokenForm = ({ endpoint }) => {
     setCurrentStep(5);
   };
 
+  if (result) {
+    return (
+      <form className="form-container">
+        <div className="trending-container">
+          <div className="trending-header">
+            <h2>Result:</h2>
+          </div>
+          {result.success ? (
+            <div className="result success">
+              <p className="successp">{result.message}</p>
+              <p className="successp">
+                <strong>Mint Address:</strong> {result.mintAddress}
+              </p>
+              <div className="result-links">
+                <a
+                  href={`https://solscan.io/token/${result.mintAddress}?cluster=mainnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="result-button"
+                >
+                  Solscan
+                </a>
+                <a
+                  href={`https://explorer.solana.com/address/${result.mintAddress}?cluster=mainnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="result-button"
+                >
+                  Explorer
+                </a>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(result.mintAddress)}
+                  className="result-button"
+                >
+                  Copy Address
+                </button>
+                <a
+                  href={`https://dexscreener.com/solana/${result.mintAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="result-button"
+                >
+                  DEX Screener
+                </a>
+                <a
+                  href="https://raydium.io/liquidity/create-pool/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="result-button"
+                >
+                  Create Pool
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="result error">
+              <p className="errorp">{result.message || 'Error creating token.'}</p>
+              <button type="button" onClick={() => { setResult(null); setCurrentStep(4); }} className="button back-button">
+                Back
+              </button>
+            </div>
+          )}
+        </div>
+      </form>
+    );
+  }
+
   const renderStepContent = () => {
     if (currentStep === 1 && !publicKey) {
       return (
@@ -804,7 +933,7 @@ const CreateTokenForm = ({ endpoint }) => {
                   value={tokenName}
                   onChange={(e) => setTokenName(e.target.value)}
                   maxLength={32}
-                  placeholder="Coin Create Token"
+                  placeholder="CoinCreate Token"
                 />
               </div>
               <div className="form-group">
@@ -1018,66 +1147,7 @@ const CreateTokenForm = ({ endpoint }) => {
           </div>
         );
       case 5:
-        return (
-          <div className="form-step">
-            {result?.success ? (
-              <div className="result success">
-                <p className="successp">{result.message}</p>
-                <p className="successp">
-                  <strong>Mint Address:</strong> {result.mintAddress}
-                </p>
-                <div className="result-links">
-                  <a
-                    href={`https://solscan.io/token/${result.mintAddress}?cluster=mainnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="result-button"
-                  >
-                    Solscan
-                  </a>
-                  <a
-                    href={`https://explorer.solana.com/address/${result.mintAddress}?cluster=mainnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="result-button"
-                  >
-                    Explorer
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => navigator.clipboard.writeText(result.mintAddress)}
-                    className="result-button"
-                  >
-                    Copy Address
-                  </button>
-                  <a
-                    href={`https://dexscreener.com/solana/${result.mintAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="result-button"
-                  >
-                    DEX Screener
-                  </a>
-                  <a
-                    href="https://raydium.io/liquidity/create-pool/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="result-button"
-                  >
-                    Create Pool
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <div className="result error">
-                <p className="errorp">{result?.message || 'Error creating token.'}</p>
-                <button type="button" onClick={() => setResult(null)} className="button back-button">
-                  Back
-                </button>
-              </div>
-            )}
-          </div>
-        );
+        return null;
       default:
         return null;
     }
@@ -1112,46 +1182,20 @@ const CreateTokenForm = ({ endpoint }) => {
             )}
           </div>
         )}
-        <div className='mobileonly'>
-  <h3 className='whiteh3'>Try Copying</h3>
-  <button className='inderbut'>
-    <a href='/trending' className='trendingfet'>Trending Tokens</a>
-    <span className="new-tag2">New</span>
-  </button>
-</div>
-
+        <div className="mobileonly">
+          <h3 className="whiteh3">Try Copying</h3>
+          <button className="inderbut">
+            <a href="/trending" className="trendingfet">Trending Tokens</a>
+            <span className="new-tag2">New</span>
+          </button>
+        </div>
       </form>
-      {/* Coin History pod form-container */}
       <CoinHistory />
     </div>
   );
 };
 
-const ProgressBar = ({ currentStep, progressPercent }) => {
-  const steps = [1, 2, 3, 4, 5];
-  return (
-    <div className="progress-bar-wrapper">
-      <div className="progress-bar-track">
-        <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
-      </div>
-      <div className="progress-steps">
-        {steps.map((step) => (
-          <div
-            key={step}
-            className={`progress-step ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}
-          >
-            <span>{step}</span>
-          </div>
-        ))}
-      </div>
-      <div className="progress-text">Step {currentStep} of 5</div>
-    </div>
-  );
-};
-
-// Stránka pro Create Token + Coin History
 const CreateTokenPage = () => {
-  // RPC endpoint
   const endpoint =
     'https://snowy-newest-diagram.solana-mainnet.quiknode.pro/1aca783b369672a2ab65d19717ce7226c5747524';
 
@@ -1174,7 +1218,7 @@ const CreateTokenPage = () => {
 const Footer = () => {
   return (
     <footer className="footer">
-      <p>
+ <p>
         FOLLOW OUR OFFICIAL{' '}
         <a className="afooter" href="https://discord.gg/66eYfa4xYx">
           DISCORD CHANNEL
@@ -1187,7 +1231,7 @@ const Footer = () => {
       <p>
         © 2025 CoinCreate.org | All Rights Reserved | Support on Discord{' '}
         <a className="afooter" href="https://discord.gg/66eYfa4xYx">
-          Discord Support
+          Support
         </a>{' '}
         | Become an affiliate for{' '}
         <a className="afooter" href="https://discord.gg/66eYfa4xYx">
@@ -1198,8 +1242,22 @@ const Footer = () => {
   );
 };
 
-// ================ HLAVNÍ KOMPONENTA APP ================
 export default function App() {
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const af = urlParams.get('af');
+    if (af) {
+      document.cookie = `affiliateId=${af}; path=/;`;
+    }
+    const clearAffiliateCookie = () => {
+      document.cookie = "affiliateId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    };
+    window.addEventListener('beforeunload', clearAffiliateCookie);
+    return () => {
+      window.removeEventListener('beforeunload', clearAffiliateCookie);
+    };
+  }, []);
+
   return (
     <NotificationProvider>
       <div className="app-wrapper">
@@ -1208,6 +1266,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<CreateTokenPage />} />
             <Route path="/trending" element={<TrendingPage />} />
+            <Route path="/affiliate" element={<AffiliateDashboard />} />
+            <Route path="/note" element={<PhantomNote />} />
           </Routes>
         </div>
         <Footer />

@@ -14,16 +14,29 @@
   --transition-speed: 0.3s;
   --transition-slow: 0.5s;
 }
+.headerr {
+  text-decoration: none;
+}
+
+.headerr:hover {
+  text-decoration: underline;
+}
+
 
 /* Import písma */
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@font-face {
+  font-family: 'LinkSans';
+  src: url('LinkSansVF.251c9878 (1).woff2') format('woff2');
+  font-weight: 100 900; /* Variabilní rozsah vah */
+  font-style: normal;
+}
 
 /* Reset a základní styly */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: "Be Vietnam Pro", sans-serif;
+  font-family: 'LinkSans', sans-serif;
   font-optical-sizing: auto;
   font-weight: 400;
   transition: all var(--transition-speed) ease;
@@ -776,7 +789,7 @@ strong {
 .border {
   margin-top: 2rem !important;
   padding-top: 2rem !important;
-  border-top: 1px solid #fff;
+  border-top: 1px solid #e4f0ff27;
 }
 
 .instructions-section li {
@@ -884,13 +897,20 @@ strong {
   position: absolute;
   top: 0;
   right: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to left, #0f1f27a8, #0e2a3aa8, transparent);
+  width: 120%;
+  height: 140%;
+  background: linear-gradient(to left, #17191a65, #0d1d3127, transparent);
   transform: skewX(-20deg);
   transition: right 0.5s ease;
   pointer-events: none;
   z-index: 1;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;         /* Tloušťka čáry */
+  background-color: #e4f0ff27; /* Barva čáry */
+  margin: 30px 0;      /* Vzdálenost nad a pod oddělovačem */
 }
 
 .switch-field.active::before {
@@ -1060,7 +1080,7 @@ textarea.input-field {
   }
 
   .header-top p {
-    font-size: 0.6rem;
+    font-size: 0.5rem;
   }
   
   .form-group.input-field-container {
@@ -1474,6 +1494,7 @@ textarea.input-field {
 
 .coin-history-item .coin-details {
   flex: 1;
+  font-size: 0.9rem;
   color: #fff;
 }
 
@@ -1525,6 +1546,17 @@ textarea.input-field {
   background-color: #25b84762;
   color: #fff;
   border: 0.5px solid green;
+  backdrop-filter: blur(10px);
+  font-size: 0.6rem;
+  padding: 4px 8px;
+  border-radius: 25px;
+  margin-left: 5px;
+}
+
+.hot-tag {
+  background-color: #ff671586;
+  color: #fff;
+  border: 0.5px solid #ff9f32c5;
   backdrop-filter: blur(10px);
   font-size: 0.6rem;
   padding: 4px 8px;
@@ -1594,4 +1626,208 @@ textarea.input-field {
   color: #ffffff;
   border: 1px solid rgba(99, 99, 99, 0.5);
   transform: scale(1.01);
+}
+
+/* ========== AFFILIATE DASHBOARD STYLY ========== */
+
+.affiliate-dashboard {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  /* Pozadí a rámeček ladící se zbytkem designu */
+  background-image: linear-gradient(45deg,#111013,#121418),linear-gradient(45deg,#d3d3d39c,#e9e5f581);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border-radius: 25px;
+  box-shadow: 0 12px 24px rgba(0,0,0,.048);
+  filter: drop-shadow(5px 5px 20px rgba(110,103,119,.034));
+  border: 2px solid #0000;
+  animation: fadeIn var(--transition-speed, 0.5s) ease;
+  color: #eceaea;
+  text-align: center;
+}
+
+.affiliate-dashboard h2 {
+  font-size: 1.6rem;
+  margin-bottom: 1rem;
+  color: #f5f5f5;
+}
+
+/* Sekce s affiliate odkazem a tlačítkem copy */
+.affiliate-link-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.affiliate-link-section p {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  color: #fdfdfd;
+}
+
+.affiliate-link-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--input-border, #333);
+  border-radius: 25px;
+  background: var(--input-bg, #191b1d);
+  color: #fff;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.affiliate-copy-button {
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, #6a7f9628, #7088a71f);
+  border: 1px solid rgba(116, 116, 116, 0.5);
+  color: #fdfdfd;
+  font-size: 0.8rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-speed, 0.3s) ease,
+    transform var(--transition-speed, 0.3s) ease;
+}
+
+.affiliate-copy-button:hover {
+  background: linear-gradient(135deg, #00000000, #080b0e1a);
+  transform: scale(1.02);
+}
+
+/* Sekce se statistikami (počet coins a reward) */
+.affiliate-stats {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #bebebec4;
+  margin-top: 1rem;
+}
+
+.affiliate-stats p {
+  margin: 0.5rem 0;
+}
+
+/* ========== TLAČÍTKO Request Withdrawal v trending-refresh-row ========== */
+
+.trending-withdraw-button {
+  text-decoration: none;
+  background: linear-gradient(135deg, #f0f0f0, #f0f0f0);
+  border: none;
+  color: #1b1b1b;
+  font-size: 0.8rem;
+  border-radius: 25px;
+  height: 40px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-speed, 0.3s) ease,
+    transform var(--transition-speed, 0.3s) ease,
+    box-shadow var(--transition-speed, 0.3s) ease;
+}
+
+.trending-withdraw-button:hover {
+  transform: scale(1.02);
+  background: linear-gradient(135deg, #ffffffc7, #f4f4f4);
+}
+
+.trending-withdraw-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mobilní styly */
+@media (max-width: 768px) {
+  /* Upravíme trochu velikost a padding tlačítka */
+  .trending-withdraw-button {
+    font-size: 0.7rem;
+    height: 35px;
+    padding: 0 16px;
+  }
+
+  .header-nav > .header-button {
+    width: 100%;
+    font-size: 0.7rem;
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  .coin-history-item .copy-button {
+    font-size: 0.6rem !important;
+    padding: 0px 10px !important;
+    height: 30px !important;
+    margin: auto;
+  }
+
+  .coin-details {
+    font-size: 0.5rem !important;
+  }
+  
+  .coin-history-item .delete-button {
+    font-size: 0.6rem !important;
+    padding: 0px 10px !important;
+    height: 30px !important;
+    margin: auto;
+  }
+
+  .header-nav > .wallet-adapter-button  {
+    width: 200px ;
+    font-size: 0.7rem;
+    max-width: 200px ;
+    min-width: 200px;
+  }
+
+  .trending-create-button {
+    font-size: 0.6rem;
+  }
+  
+  /* Affiliate Dashboard zmenšíme paddingy */
+  .affiliate-dashboard {
+    margin: 1rem auto;
+    padding: 1rem;
+  }
+  
+  .affiliate-link-input {
+    max-width: 100%;
+    font-size: 0.8rem;
+  }
+
+  .affiliate-copy-button {
+    font-size: 0.75rem;
+    padding: 0.4rem 1rem;
+  }
+  
+  .affiliate-stats {
+    font-size: 0.8rem;
+  }
+  
+  .affiliate-stats p {
+    margin: 0.3rem 0;
+  }
+}
+
+.affiliate-dashboard p {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: rgba(240, 240, 240, 0.85);
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Zvýrazněné odměny a statistiky */
+.affiliate-stats span {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #6a7f9628, #7088a71f);
+  padding: 8px 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
