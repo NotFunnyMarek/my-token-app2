@@ -819,7 +819,7 @@ strong {
 .footer p {
   margin: 0.5rem auto;
   font-size: 0.5rem;
-  max-width: 70%;
+  max-width: 80%;
   opacity: 0.8;
   text-align: center;
   line-height: 1.4;
@@ -1694,6 +1694,7 @@ textarea.input-field {
 }
 
 .affiliate-copy-button:hover {
+  filter: drop-shadow(0px 0px 10px rgba(227, 228, 227, 0.16));
   background: linear-gradient(135deg, #00000000, #080b0e1a);
   transform: scale(1.02);
 }
@@ -1828,6 +1829,341 @@ textarea.input-field {
   color: #ffffff;
   background: linear-gradient(135deg, #6a7f9628, #7088a71f);
   padding: 8px 15px;
-  border-radius: 10px;
+  border-radius: 25px;
   margin-bottom: 10px;
+}
+
+/* Styl karty s affiliate statistikami */
+.affiliate-stats-card {
+  background: linear-gradient(135deg, #36435028, #1a20291f);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  padding: 20px;
+  margin-bottom: 20px;
+  color: #eceaea;
+}
+
+.card-title {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 200 !important;
+  margin-bottom: 16px;
+  font-weight: bold;
+}
+
+/* Tabulkový layout pro statistiky */
+.stats-table {
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr;
+  gap: 12px;
+}
+
+.stats-row {
+  display: contents;
+}
+
+.stats-col {
+  padding: 10px;
+  border-radius: 25px;
+}
+
+.stats-col.label {
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+  text-align: left;
+  color: #b7b7b7;
+}
+
+.stats-col.value {
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 1.1rem;
+  font-weight: 500;
+  text-align: center;
+  color: #e0e0e0ee;
+}
+
+/* Oddělený řádek přes celou šířku (volitelný) */
+.stats-row.full {
+  grid-column: span 2;
+  text-align: center;
+}
+
+/* Affiliate link sekce */
+.affiliate-link-section {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+
+.affiliate-copy-button:hover {
+  transform: scale(1.05);
+}
+
+/* Styl pro progress bar a level sekci */
+.levels-section {
+  background: linear-gradient(135deg, #36435028, #1a20291f);
+  backdrop-filter: blur(10px);
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  margin-bottom: 20px;
+}
+
+.levels-indicator {
+  text-align: center;
+  font-size: 1rem;
+  margin: 12px 0;
+  color: #f0f0f0;
+}
+
+.toggle-levels-button {
+  display: block;
+  margin: 0 auto 12px auto;
+  background: none;
+  border: none;
+  filter: drop-shadow(0px 0px 10px rgba(227, 228, 227, 0.16));
+  color: #e2e2e2;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.toggle-levels-button:hover {
+  transform: scale(1.05);
+}
+
+.levels-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease, opacity 0.5s ease;
+  opacity: 0;
+}
+
+.levels-details.show {
+  max-height: 500px;
+  opacity: 1;
+}
+
+.level-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e4f0ff27;
+}
+
+.level-detail:last-child {
+  border-bottom: none;
+}
+
+.level-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+.level-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: rgb(255, 255, 255);
+  margin-bottom: 4px;
+}
+
+.level-range,
+.level-reward {
+  font-size: 0.8rem;
+  color: #adadadd5;
+}
+
+.level-status {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.level-status.unlocked {
+  color: #36e03bfd;
+  background-color: #28612a5d;
+  filter: drop-shadow(0px 0px 10px rgba(81, 182, 68, 0.16));
+  padding: 8px;
+  font-weight: 400;
+  border-radius: 25px;
+}
+
+.level-status.locked {
+  color: #e04136fd;
+  background-color: #6128285d;
+  filter: drop-shadow(0px 0px 10px rgba(182, 85, 68, 0.16));
+  padding: 8px;
+  font-weight: 400;
+  border-radius: 25px;
+}
+
+/* Progress bar styly */
+.progress-section {
+  margin: 16px auto;
+  max-width: 800px;
+}
+
+.affiliate-progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #494a4d;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.affiliate-progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #d7dfe9ef, #c1c6d6bd);
+  transition: width 0.5s ease;
+}
+
+.progress-info {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+
+.dashboard-subtitle {
+  font-size: 0.85rem;
+  color: #ccc;
+  margin-top: 8px;
+}
+
+
+/* NOVÉ STYLY PRO RESULT (úspěch/chyba) */
+
+.token-result-container {
+  padding: 2rem;
+  border-radius: 25px;
+  background-image:
+    linear-gradient(45deg, #111013ee, #121418ee),
+    linear-gradient(45deg, #d3d3d32c, #e9e5f517);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.048);
+  filter: drop-shadow(5px 5px 20px rgba(110, 103, 119, 0.034));
+  animation: fadeIn var(--transition-slow) ease-in-out;
+  margin: 0 auto;
+  text-align: center;
+  color: #fff;
+}
+
+.token-result-success,
+.token-result-error {
+  margin: 0 auto;
+  max-width: 500px;
+  padding: 1rem;
+}
+
+.token-result-header {
+  display: flex;              /* místo column dáme flex pro řádkové zobrazení */
+  flex-direction: row;        /* zrušíme sloupec, bude to v jedné řadě */
+  align-items: center;        /* svisle na střed */
+  justify-content: center;    /* vodorovně na střed (volitelně) */
+  margin-bottom: 1.5rem;
+}
+
+.token-result-icon {
+  width: 40px;                /* velikost ikony podle potřeby */
+  height: 40px;
+  margin-right: 0.5rem;       /* mezera mezi ikonou a textem */
+  margin-bottom: 0;           /* aby se ikona neodsunula pod text */
+}
+
+.token-result-header h2 {
+  margin: 0;
+  color: rgba(236, 236, 236, 0.945);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.success-icon {
+  filter: drop-shadow(0px 0px 10px rgba(53, 138, 42, 0.17));
+  color: #27ae60; /* zelená */
+  float: left;
+}
+
+.error-icon {
+  color: #c0392b; /* červená */
+}
+
+.token-result-header h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.token-result-address-field {
+  text-align: left;
+  margin: 1rem 0;
+}
+
+.token-result-address-field label {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.token-address-wrapper {
+  display: flex;
+  align-items: center;
+  background: #191b1d;
+  border: 1px solid rgba(255, 255, 255, 0.226);
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.token-address-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #fff;
+  padding: 0.75rem;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.token-address-copy-button {
+  background: none;
+  border: none;
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.token-address-copy-button:hover {
+  scale: 1.1;
+  color: rgb(185, 245, 185);
+}
+
+.copy-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.token-result-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.token-result-note {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+.error-message {
+  font-size: 0.9rem;
+  margin: 1rem 0;
+  color: #ff9f9f;
 }

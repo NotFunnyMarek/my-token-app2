@@ -4,20 +4,69 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useNotification } from './App';
 
+const LEVELS = [
+  { level: 1, range: "0 - 10", reward: "$4.80" },
+  { level: 2, range: "11 - 30", reward: "$7.40" },
+  { level: 3, range: "31 - 50", reward: "$9.90" },
+  { level: 4, range: "51 - 70", reward: "$11.30" },
+  { level: 5, range: "71 - 99", reward: "$12.60" },
+  { level: 6, range: "100+", reward: "$14.10" }
+];
+
+const getLevelBounds = (level) => {
+  switch(level) {
+    case 1: return { lower: 0, upper: 10 };
+    case 2: return { lower: 10, upper: 30 };
+    case 3: return { lower: 30, upper: 50 };
+    case 4: return { lower: 50, upper: 70 };
+    case 5: return { lower: 70, upper: 99 };
+    default: return { lower: 99, upper: 99 }; // Level 6 => 100+
+  }
+};
+
+const AffiliateProgressBar = ({ coinsCreated, level }) => {
+  if (level === 6) {
+    return (
+      <div className="progress-section">
+        <div className="affiliate-progress-bar">
+          <div className="affiliate-progress-fill" style={{ width: '100%' }}></div>
+        </div>
+        <div className="progress-info">Maximum Level Reached</div>
+      </div>
+    );
+  }
+  const bounds = getLevelBounds(level);
+  const coinsInLevel = coinsCreated - bounds.lower;
+  const levelRange = bounds.upper - bounds.lower + 1;
+  const progressPercent = (coinsInLevel / levelRange) * 100;
+  const coinsRemaining = bounds.upper - coinsCreated + 1;
+  return (
+    <div className="progress-section">
+      <div className="affiliate-progress-bar">
+        <div className="affiliate-progress-fill" style={{ width: `${progressPercent}%` }}></div>
+      </div>
+      <div className="progress-info">
+        You need {coinsRemaining} more coin{coinsRemaining > 1 ? 's' : ''} to reach Level {level + 1}
+      </div>
+    </div>
+  );
+};
+
 const AffiliateDashboard = () => {
   const { publicKey } = useWallet();
   const { addNotification } = useNotification();
+  
   const [affiliateStats, setAffiliateStats] = useState(null);
   const [copied, setCopied] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [showLevels, setShowLevels] = useState(false);
 
-  // Krátký affiliate ID (prvních 5 znaků publicKey)
+  // Vytvoření affiliate ID – prvních 5 znaků z publicKey
   const shortAffiliateId = publicKey ? publicKey.toBase58().substring(0, 5) : '';
   const affiliateLink = shortAffiliateId
     ? `${window.location.origin}/?af=${shortAffiliateId}`
     : '';
 
-  // Načtení statistik z PHP endpointu
   const fetchAffiliateStats = async () => {
     if (!publicKey) return;
     try {
@@ -32,10 +81,11 @@ const AffiliateDashboard = () => {
   };
 
   useEffect(() => {
-    fetchAffiliateStats();
+    if (publicKey) {
+      fetchAffiliateStats();
+    }
   }, [publicKey]);
 
-  // Kopírování odkazu
   const handleCopy = () => {
     navigator.clipboard.writeText(affiliateLink);
     setCopied(true);
@@ -43,7 +93,6 @@ const AffiliateDashboard = () => {
     setTimeout(() => setCopied(false), 3000);
   };
 
-  // Zpracování výběru (withdraw)
   const handleWithdrawal = async () => {
     if (!publicKey) {
       addNotification({
@@ -58,13 +107,10 @@ const AffiliateDashboard = () => {
       const response = await axios.post('https://app.byxbot.com/php/links.php', {
         affiliateId: shortAffiliateId,
         action: 'withdraw',
-        walletAddress: walletAddress
+        walletAddress
       });
       addNotification({ type: 'success', message: response.data.message });
-      // Po výběru resetujeme reward v zobrazení
-      setAffiliateStats((prev) =>
-        prev ? { ...prev, reward: '0.00' } : { coinsCreated: 0, reward: '0.00' }
-      );
+      await fetchAffiliateStats();
     } catch (error) {
       console.error('Error requesting withdrawal:', error);
       addNotification({ type: 'error', message: 'Error requesting withdrawal.' });
@@ -72,29 +118,56 @@ const AffiliateDashboard = () => {
     setWithdrawing(false);
   };
 
+  const toggleLevels = () => {
+    setShowLevels(prev => !prev);
+  };
+
+  let progressSection = null;
+  if (affiliateStats) {
+    progressSection = (
+      <div className="levels-section">
+        <AffiliateProgressBar coinsCreated={affiliateStats.coinsCreated} level={affiliateStats.level} />
+        <button className="toggle-levels-button" onClick={toggleLevels}>
+          {showLevels ? 'Hide Level Details' : 'Show Level Details'}
+        </button>
+        <div className={`levels-details ${showLevels ? 'show' : ''}`}>
+          {LEVELS.map(item => {
+            const unlocked = affiliateStats.level >= item.level;
+            return (
+              <div
+                key={item.level}
+                className="level-detail"
+              >
+                <div className="level-info">
+                  <span className="level-title">Level {item.level}</span>
+                  <span className="level-range">({item.range})</span>
+                  <span className="level-reward">Reward: {item.reward} /coin</span>
+                </div>
+                <div className={`level-status ${unlocked ? 'unlocked' : 'locked'}`}>
+                  {unlocked ? 'Unlocked' : 'Locked'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* Horní sekce - "Copy Trending PumpFun Tokens NOW" */}
       <div className="topapp">
         <h2 className="app-title" style={{ textAlign: 'center' }}>
-        Your Affiliate Dashboard
+          Your Affiliate Dashboard
         </h2>
-        <p
-          style={{
-            textAlign: 'center',
-            fontSize: '0.85rem',
-            color: '#ccc',
-            marginBottom: '1.5rem'
-          }}
-        >
-          As a member of CoinCreate's Ambassador Program, you will receive $8.50 for every coin created through your link! The minimum withdrawal amount is $8.50 and is made using a linked solana wallet.
+        <p className="dashboard-subtitle">
+          As a member of CoinCreate's Ambassador Program, you earn rewards for each coin created via your link based on our ranking-system level.
         </p>
       </div>
 
-      {/* Řádek s informací a tlačítkem (nyní Request Withdrawal) */}
       <div className="trending-refresh-row">
         <div className="trending-info">
-        Withdrawals are sent manually after verification within 24 hours<br /> to the linked solana wallet. 🔒
+          Withdrawals are sent manually after verification within 24 hours<br />to the linked Solana wallet. 🔒
         </div>
         <div>
           {!publicKey ? (
@@ -111,9 +184,10 @@ const AffiliateDashboard = () => {
         </div>
       </div>
 
-      {/* Samotná Affiliate sekce */}
-      <div className="affiliate-dashboard">
+      {/* Progress bar a přehled levelů pod řádkem trending-refresh-row */}
+      {affiliateStats && progressSection}
 
+      <div className="affiliate-dashboard">
         {!publicKey ? (
           <div style={{ textAlign: 'center' }}>
             <p>Please connect your wallet to view your affiliate dashboard.</p>
@@ -121,6 +195,29 @@ const AffiliateDashboard = () => {
           </div>
         ) : (
           <>
+            {affiliateStats && (
+              <div className="affiliate-stats-card">
+                <h3 className="card-title">Your Affiliate Stats</h3>
+                <div className="stats-table">
+                  <div className="stats-row">
+                    <div className="stats-col label">Total Coins Created</div>
+                    <div className="stats-col value">{affiliateStats.coinsCreated}</div>
+                  </div>
+                  <div className="stats-row">
+                    <div className="stats-col label">Level</div>
+                    <div className="stats-col value">{affiliateStats.level}</div>
+                  </div>
+                  <div className="stats-row">
+                    <div className="stats-col label">Reward per coin</div>
+                    <div className="stats-col value">${affiliateStats.currentRewardRate}</div>
+                  </div>
+                  <div className="stats-row">
+                    <div className="stats-col label">Total Reward</div>
+                    <div className="stats-col value">${affiliateStats.reward}</div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="affiliate-link-section">
               <p>Your affiliate link:</p>
               <input
@@ -133,20 +230,15 @@ const AffiliateDashboard = () => {
                 {copied ? 'Copied!' : 'Copy Link'}
               </button>
             </div>
-
-            {affiliateStats ? (
-              <div className="affiliate-stats">
-                <p>Total Coins Created via Your Link: <span> {affiliateStats.coinsCreated}</span></p>
-                <p>Your Reward: <span> ${affiliateStats.reward}</span></p>
-                <div class="divider"></div>
-
-                <p>Need help? <a className="afooter" href="https://discord.gg/66eYfa4xYx">
-          Contact Us
-        </a></p>
-              </div>
-            ) : (
-              <p>Loading affiliate stats...</p>
-            )}
+            <div class="divider"></div>
+            <div className="affiliate-stats-help">
+              <p>
+                Need help?{' '}
+                <a className="afooter" href="https://discord.gg/66eYfa4xYx">
+                  Contact Us
+                </a>
+              </p>
+            </div>
           </>
         )}
       </div>

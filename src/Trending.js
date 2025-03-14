@@ -6,7 +6,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useNotification } from './App';
 import { createCoinOnSolana } from './App';
 
-// Funkce pro zkrácení textu na maximálně maxLength znaků s přidáním "..."
+// Funkce pro zkrácení textu
 const truncateText = (text, maxLength) => {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
@@ -15,6 +15,8 @@ const truncateText = (text, maxLength) => {
 const TrendingPage = () => {
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Uložíme výsledek (úspěch / chyba) po vytvoření
   const [result, setResult] = useState(null);
 
   // Připojení peněženky
@@ -28,12 +30,14 @@ const TrendingPage = () => {
   // Placeholder ikona
   const blankIcon = 'https://via.placeholder.com/48?text=?';
 
-  // Načtení trending coinů přes proxy s retry při 503
+  // Načtení trending coinů přes proxy
   const fetchTrendingCoins = async () => {
     setLoading(true);
     try {
       const targetUrl = 'https://coinfast.fun/api/proxy-tokens';
-      const proxyUrl = `https://api.allorigins.win/get?disableCache=true&url=${encodeURIComponent(targetUrl)}`;
+      const proxyUrl = `https://api.allorigins.win/get?disableCache=true&url=${encodeURIComponent(
+        targetUrl
+      )}`;
 
       const response = await axios.get(proxyUrl);
       const data = JSON.parse(response.data.contents);
@@ -87,7 +91,7 @@ const TrendingPage = () => {
       const resultObj = await createCoinOnSolana({
         publicKey,
         signAndSendTransaction,
-        signTransaction, // předáme fallback metodu
+        signTransaction,
         endpoint,
         tokenName: coin.name || 'Unnamed',
         tokenSymbol: coin.symbol || '???',
@@ -104,13 +108,15 @@ const TrendingPage = () => {
         addNotification,
       });
       setResult(resultObj);
+
       if (resultObj.success) {
         addNotification({ type: 'success', message: `Coin ${coin.name} created!` });
       } else {
         if (resultObj.message.includes('503')) {
           addNotification({
             type: 'error',
-            message: 'Server error (503): The service might be overloaded. Please try again later.',
+            message:
+              'Server error (503): The service might be overloaded. Please try again later.',
           });
         } else {
           addNotification({ type: 'error', message: resultObj.message });
@@ -118,60 +124,87 @@ const TrendingPage = () => {
       }
     } catch (error) {
       console.error('Error during coin creation:', error);
-      addNotification({ type: 'error', message: 'An unexpected error occurred during coin creation.' });
+      addNotification({
+        type: 'error',
+        message: 'An unexpected error occurred during coin creation.',
+      });
     }
   };
 
-  const handlePumpFun = (address) => {
-    if (address) {
-      window.open(`https://pump.fun/coin/${address}`, '_blank');
-    }
-  };
-
+  // =======================================
+  // ========== VÝSLEDEK TVORBY =============
+  // =======================================
   if (result) {
     return (
-      <form className="form-container">
-        <div className="trending-container">
-          <div className="trending-header">
-            <h2>Result:</h2>
-          </div>
+      <div className="form-container">
+        <div className="trending-container token-result-container">
           {result.success ? (
-            <div className="result success">
-              <p className="successp">{result.message}</p>
-              <p className="successp">
-                <strong>Mint Address:</strong> {result.mintAddress}
-              </p>
-              <div className="result-links">
-                <a
-                  href={`https://solscan.io/token/${result.mintAddress}?cluster=mainnet`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="result-button"
+            <div className="token-result-success">
+              {/* Ikona úspěchu */}
+              <div className="token-result-header">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  className="token-result-icon success-icon"
                 >
-                  Solscan
-                </a>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2l4 -4" />
+                  <circle cx="12" cy="12" r="9" />
+                </svg>
+                <h2>Token Created Successfully!</h2>
+              </div>
+
+              {/* Pole s token address + kopírovací tlačítko */}
+              <div className="token-result-address-field">
+                <label htmlFor="mintAddress">Token Address</label>
+                <div className="token-address-wrapper">
+                  <input
+                    id="mintAddress"
+                    type="text"
+                    readOnly
+                    value={result.mintAddress}
+                    className="token-address-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(result.mintAddress)}
+                    className="token-address-copy-button"
+                    title="Copy Address"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      className="copy-icon"
+                    >
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Odkazy / tlačítka */}
+              <div className="token-result-buttons">
                 <a
                   href={`https://explorer.solana.com/address/${result.mintAddress}?cluster=mainnet`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="result-button"
                 >
-                  Explorer
+                  View on Explorer
                 </a>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(result.mintAddress)}
-                  className="result-button"
-                >
-                  Copy Address
-                </button>
                 <a
-                  href={`https://dexscreener.com/solana/${result.mintAddress}`}
+                  href={`https://solscan.io/token/${result.mintAddress}?cluster=mainnet`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="result-button"
                 >
-                  DEX Screener
+                  View on Solscan
                 </a>
                 <a
                   href="https://raydium.io/liquidity/create-pool/"
@@ -179,30 +212,70 @@ const TrendingPage = () => {
                   rel="noopener noreferrer"
                   className="result-button"
                 >
-                  Create Pool
+                  Create Liquidity Pool
                 </a>
               </div>
+
+              <p className="token-result-note">
+                Add this token to your wallet using the token address above.
+              </p>
             </div>
           ) : (
-            <div className="result error">
-              <p className="errorp">{result.message || 'Error creating token.'}</p>
-              <button type="button" onClick={() => setResult(null)} className="button back-button">
+            <div className="token-result-error">
+              {/* Ikona chyby */}
+              <div className="token-result-header">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  className="token-result-icon error-icon"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10.29 3.86l-6.63 11.47c-.79 1.36.2 3.07 1.73 3.07h13.26c1.53 0 2.52-1.71 1.73-3.07l-6.63-11.47a2 2 0 00-3.46 0z"
+                  />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <h2>Token Creation Failed</h2>
+              </div>
+              <p className="error-message">
+                {result.message || 'Error creating token.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setResult(null)}
+                className="button back-button"
+              >
                 Back
               </button>
             </div>
           )}
         </div>
-      </form>
+      </div>
     );
   }
 
+  // ================================
+  // ========== RENDER LIST =========
+  // ================================
   return (
     <div className="trending-container">
       <div className="topapp">
         <h2 className="app-title" style={{ textAlign: 'center' }}>
           Copy Trending PumpFun Tokens NOW
         </h2>
-        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#ccc', marginBottom: '1.5rem' }}>
+        <p
+          style={{
+            textAlign: 'center',
+            fontSize: '0.85rem',
+            color: '#ccc',
+            marginBottom: '1.5rem',
+          }}
+        >
           Copy trending pump.fun tokens and launch them on Raydium instantly!
           If you create a token it will have all 3 revoke options turned ON automatically.
         </p>
@@ -281,7 +354,9 @@ const TrendingPage = () => {
                       {coin.address && (
                         <button
                           type="button"
-                          onClick={() => window.open(`https://pump.fun/coin/${coin.address}`, '_blank')}
+                          onClick={() =>
+                            window.open(`https://pump.fun/coin/${coin.address}`, '_blank')
+                          }
                           className="trending-pump-button"
                         >
                           Pump.fun
@@ -292,10 +367,12 @@ const TrendingPage = () => {
                 </div>
                 <div className="trending-coin-right">
                   <div className="trending-coin-marketcap">
-                    <span className='spansmall'>USD Market Cap</span>
+                    <span className="spansmall">USD Market Cap</span>
                     <br />
                     <span className="trending-coin-marketcap-value">
-                      {marketCapNumber > 0 ? `$${marketCapNumber.toLocaleString()}` : 'N/A'}
+                      {marketCapNumber > 0
+                        ? `$${marketCapNumber.toLocaleString()}`
+                        : 'N/A'}
                     </span>
                   </div>
                   <button
