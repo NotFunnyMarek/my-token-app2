@@ -18,7 +18,8 @@ const root = ReactDOM.createRoot(container);
 
 const network = WalletAdapterNetwork.Mainnet;
 const wallets = [
-  new PhantomWalletAdapter(),
+  // Nastavíme appUrl na aktuální doménu, aby Phantom ověřil původ dApp
+  new PhantomWalletAdapter({ appUrl: window.location.origin }),
   new SolletWalletAdapter({ network }),
   new SolflareWalletAdapter({ network }),
 ];

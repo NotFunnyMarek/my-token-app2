@@ -899,7 +899,7 @@ strong {
   right: -100%;
   width: 120%;
   height: 140%;
-  background: linear-gradient(to left, #17191a65, #0d1d3127, transparent);
+  background: linear-gradient(to left, #1e212265, #69798d4b, transparent);
   transform: skewX(-20deg);
   transition: right 0.5s ease;
   pointer-events: none;
@@ -1904,7 +1904,7 @@ textarea.input-field {
 .levels-section {
   background: linear-gradient(135deg, #36435028, #1a20291f);
   backdrop-filter: blur(10px);
-  padding: 16px;
+  padding: 50px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 25px;
   margin-bottom: 20px;
@@ -2166,4 +2166,72 @@ textarea.input-field {
   font-size: 0.9rem;
   margin: 1rem 0;
   color: #ff9f9f;
+}
+
+
+.terms-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #191b1d;
+  border: 1px solid rgba(255, 255, 255, 0.226);
+  border-radius: 25px;
+  font-size: 0.9rem;
+  color: #333;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease-in-out;
+}
+
+.terms-container:hover {
+  border-color: 1px solid rgba(255, 255, 255, 0.226);
+  scale: 1.01;
+}
+
+.terms-container input[type="checkbox"] {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #d3d3d3;
+  border-radius: 8px;
+  background-color: #d4d4d417;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+.terms-container input[type="checkbox"]:checked {
+  background-color: #16262e;
+  border-color: #e3e4e6;
+}
+
+.terms-container input[type="checkbox"]::after {
+  content: "✔";
+  font-size: 12px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+}
+
+.terms-container input[type="checkbox"]:checked::after {
+  display: block;
+}
+
+.terms-container label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.terms-container label a {
+  color: #e7e7e7;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.terms-container label a:hover {
+  text-decoration: underline;
 }

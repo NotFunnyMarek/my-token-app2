@@ -27,7 +27,7 @@ import {
   createUpdateMetadataAccountV2Instruction,
 } from '@metaplex-foundation/mpl-token-metadata';
 
-// Importujeme funkci pro memo instrukci, která pomáhá vysvětlit účel převodu
+// Import memo instrukce
 import { createMemoInstruction } from '@solana/spl-memo';
 
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -36,12 +36,21 @@ import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 
 import TrendingPage from './Trending';
 import AffiliateDashboard from './affiliate';
-import PhantomNote from './phantom-note'; // cesta podle umístění souboru
+import PhantomNote from './phantom-note';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import './app.css';
 
 // Nastavení Bufferu pro prohlížeče
 window.Buffer = Buffer;
+
+// *******************************
+// ***** FEE MODE CONFIGURATION *****
+// Možnosti:
+// "SINGLE" – současná transakce obsahující poplatek 0.1 SOL a token transakci (aktuální chování)
+// "SPLIT"  – oddělená transakce: nejprve 0.1 SOL poplatek, poté transakce s tokenem
+// "NOFEE"  – pouze token transakce bez poplatku
+// *******************************
+const FEE_MODE = "SINGLE"; // Změňte na "SPLIT" nebo "NOFEE" dle potřeby
 
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'
@@ -403,14 +412,16 @@ export async function createCoinOnSolana({
     const walletKey = new PublicKey(publicKey.toString());
     const connection = new Connection(endpoint, 'confirmed');
 
-    // Kontrola dostatečného SOL na poplatky
-    const balance = await connection.getBalance(walletKey);
-    if (balance < 0.118 * LAMPORTS_PER_SOL) {
-      addNotification({
-        type: 'error',
-        message: 'Insufficient SOL to cover fees (min 0.11 SOL).',
-      });
-      return { success: false, message: 'Not enough SOL.' };
+    // Kontrola dostatečného SOL – pokud se platí poplatek nebo probíhá SPLIT transakce
+    if (FEE_MODE !== "NOFEE") {
+      const balance = await connection.getBalance(walletKey);
+      if (balance < 0.118 * LAMPORTS_PER_SOL) {
+        addNotification({
+          type: 'error',
+          message: 'Insufficient SOL to cover fees (min 0.11 SOL).',
+        });
+        return { success: false, message: 'Not enough SOL.' };
+      }
     }
 
     const pinataApiKey = process.env.REACT_APP_PINATA_API_KEY;
@@ -472,19 +483,48 @@ export async function createCoinOnSolana({
     let { blockhash } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
-    // Převod 0.1 SOL jako poplatek – tato instrukce bude součástí stejné transakce
-    transaction.add(
-      SystemProgram.transfer({
-        fromPubkey: walletKey,
-        toPubkey: new PublicKey('DnGMKFnAh9qtatYpZsLJhwS6NN1G6LC5WtbRyuNX8o4X'),
-        lamports: 0.1 * LAMPORTS_PER_SOL,
-      })
-    );
-
-    // Přidání memo instrukce vysvětlující účel poplatku (pomáhá snížit varování Phantom o podezřelém chování)
-    transaction.add(
-      createMemoInstruction("Fee for token creation: 0.1 SOL")
-    );
+    // Podle nastavení FEE_MODE:
+    if (FEE_MODE === "SINGLE") {
+      // Převod 0.1 SOL jako poplatek v rámci jedné transakce
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: walletKey,
+          toPubkey: new PublicKey('DnGMKFnAh9qtatYpZsLJhwS6NN1G6LC5WtbRyuNX8o4X'),
+          lamports: 0.1 * LAMPORTS_PER_SOL,
+        })
+      );
+      transaction.add(
+        createMemoInstruction("Fee for token creation: 0.1 SOL")
+      );
+    } else if (FEE_MODE === "SPLIT") {
+      // Nejprve odešli samostatnou transakci pro poplatek
+      const feeTransaction = new Transaction();
+      feeTransaction.feePayer = walletKey;
+      const latest = await connection.getLatestBlockhash();
+      feeTransaction.recentBlockhash = latest.blockhash;
+      feeTransaction.add(
+        SystemProgram.transfer({
+          fromPubkey: walletKey,
+          toPubkey: new PublicKey('DnGMKFnAh9qtatYpZsLJhwS6NN1G6LC5WtbRyuNX8o4X'),
+          lamports: 0.1 * LAMPORTS_PER_SOL,
+        })
+      );
+      feeTransaction.add(
+        createMemoInstruction("Fee for token creation: 0.1 SOL")
+      );
+      let feeTxId;
+      if (signAndSendTransaction && typeof signAndSendTransaction === 'function') {
+        const feeTxResponse = await signAndSendTransaction(feeTransaction);
+        feeTxId = feeTxResponse.signature;
+      } else if (signTransaction && typeof signTransaction === 'function') {
+        const signedFeeTx = await signTransaction(feeTransaction);
+        feeTxId = await connection.sendRawTransaction(signedFeeTx.serialize());
+      } else {
+        throw new Error('No transaction signing method available for fee transaction.');
+      }
+      console.log('Fee transaction sent with txId:', feeTxId);
+    }
+    // Pokud je FEE_MODE === "NOFEE", neděláme nic s poplatkem.
 
     // Vytvoření mint účtu
     transaction.add(
@@ -701,9 +741,7 @@ const ProgressBar = ({ currentStep, progressPercent }) => {
         {steps.map((step) => (
           <div
             key={step}
-            className={`progress-step ${
-              currentStep === step ? 'active' : ''
-            } ${currentStep > step ? 'completed' : ''}`}
+            className={`progress-step ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}
           >
             <span>{step}</span>
           </div>
@@ -739,6 +777,8 @@ const CreateTokenForm = ({ endpoint }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  // Stav pro souhlas s obchodními podmínkami
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const progressPercent = ((currentStep - 1) / 4) * 100;
 
@@ -856,6 +896,10 @@ const CreateTokenForm = ({ endpoint }) => {
       addNotification({ type: 'error', message: 'Please connect your wallet first!' });
       return;
     }
+    if (!acceptedTerms) {
+      addNotification({ type: 'error', message: 'Please accept the terms and conditions.' });
+      return;
+    }
     setLoading(true);
 
     const resultObj = await createCoinOnSolana({
@@ -892,7 +936,7 @@ const CreateTokenForm = ({ endpoint }) => {
         <div className="trending-container token-result-container">
           {result.success ? (
             <div className="token-result-success">
-              {/* Ikona úspěchu (zelená fajfka) */}
+              {/* Ikona úspěchu */}
               <div className="token-result-header">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -968,14 +1012,13 @@ const CreateTokenForm = ({ endpoint }) => {
                 </a>
               </div>
 
-              {/* Doplňkový text */}
               <p className="token-result-note">
                 Add this token to your wallet using the token address above.
               </p>
             </div>
           ) : (
             <div className="token-result-error">
-              {/* Ikona chyby (trojúhelník s vykřičníkem) */}
+              {/* Ikona chyby */}
               <div className="token-result-header">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1254,9 +1297,19 @@ const CreateTokenForm = ({ endpoint }) => {
                 <strong>Revoke Update Authority:</strong> {revokeUpdate ? 'Yes' : 'No'}
               </p>
               <p>
-                <strong>Estimated Cost:</strong> 0.118 SOL
+                <strong>Estimated Cost:</strong> {FEE_MODE === "NOFEE" ? '0 SOL' : '0.118 SOL'}
               </p>
+              {/* Checkbox pro souhlas s obchodními podmínkami */}
             </div>
+            <div className="terms-container">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                />
+                <label htmlFor="terms">I Agree to Terms and Conditions</label>
+              </div>
           </div>
         );
       default:
@@ -1286,7 +1339,7 @@ const CreateTokenForm = ({ endpoint }) => {
                 type="button"
                 onClick={handleSubmit}
                 className="button submit-button"
-                disabled={loading}
+                disabled={loading || !acceptedTerms}
               >
                 {loading ? 'Creating Token...' : 'Create Token'}
               </button>
