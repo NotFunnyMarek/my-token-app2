@@ -215,7 +215,7 @@ const AffiliateDashboard = () => {
                     <div className="stats-col value">${affiliateStats.reward}</div>
                   </div>
                   <div className="stats-row">
-                    <div className="stats-col label">Link Opens</div>
+                    <div className="stats-col label">Link Views</div>
                     <div className="stats-col value">{affiliateStats.linkOpens || 0}</div>
                   </div>
                 </div>
