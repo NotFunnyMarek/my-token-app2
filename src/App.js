@@ -764,7 +764,7 @@ const ProgressBar = ({ currentStep, progressPercent }) => {
 
 /* ░░░  CREATE TOKEN FORM  ░░░  */
 const CreateTokenForm = ({ endpoint }) => {
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, sendTransaction, signAndSendTransaction } = useWallet();
   const { addNotification } = useNotification();
 
   const [tokenName, setTokenName] = useState('');

@@ -1,7 +1,7 @@
 /* Pomocná funkce, která výhradně využívá metodu signAndSendTransaction.
    Tato funkce prohledá okna window.phantom.solana a window.solana a pokusí se
    provést signAndSendTransaction; pokud selže, použije fallback sendTransaction. */
-async function customSignAndSendTransaction({
+export async function customSignAndSendTransaction({
   transaction,
   connection,
   sendTransaction,
