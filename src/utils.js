@@ -14,6 +14,10 @@ async function customSignAndSendTransaction({
     ) {
       try {
         const response = await wallet.signAndSendTransaction(transaction);
+        console.debug(
+          "transaction sent with signAndSendTransaction() successfully",
+          response,
+        );
         return response;
       } catch (e) {
         console.error("signAndSendTransaction() failed: ", e);
