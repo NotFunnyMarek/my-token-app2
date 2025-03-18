@@ -19,6 +19,7 @@ export async function customSignAndSendTransaction({
     } catch (e) {
       console.error("provided signAndSendTransaction() failed: ", e);
       console.error({ signAndSendTransaction, transaction });
+      throw e;
     }
   }
 
@@ -38,6 +39,7 @@ export async function customSignAndSendTransaction({
       } catch (e) {
         console.error("signAndSendTransaction() failed: ", e);
         console.error({ wallet, transaction });
+        throw e;
       }
     }
   }
