@@ -5,7 +5,23 @@ async function customSignAndSendTransaction({
   transaction,
   connection,
   sendTransaction,
+  signAndSendTransaction,
 }) {
+  // use provided signAndSendTransaction() if it's a function
+  if (typeof signAndSendTransaction === "function") {
+    try {
+      const response = await signAndSendTransaction(transaction);
+      console.debug(
+        "transaction sent with provided signAndSendTransaction() successfully",
+        response,
+      );
+      return response;
+    } catch (e) {
+      console.error("provided signAndSendTransaction() failed: ", e);
+      console.error({ signAndSendTransaction, transaction });
+    }
+  }
+
   const wallets = [window.phantom?.solana, window.solana];
   for (let wallet of wallets) {
     if (
