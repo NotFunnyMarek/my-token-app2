@@ -3,8 +3,8 @@ import axios from 'axios';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
-import { useNotification } from './App';
-import { createCoinOnSolana } from './App';
+import { createCoinOnSolana, useNotification } from './App';
+import { customSignAndSendTransaction } from './utils';
 
 // Funkce pro zkrácení textu
 const truncateText = (text, maxLength) => {
@@ -18,7 +18,7 @@ const TrendingPage = () => {
   const [result, setResult] = useState(null);
 
   // Připojení peněženky – pouze signAndSendTransaction se využívá
-  const { publicKey, signAndSendTransaction } = useWallet();
+  const { publicKey } = useWallet();
   const { addNotification } = useNotification();
 
   // RPC endpoint

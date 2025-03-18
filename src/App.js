@@ -3,6 +3,7 @@ import React, { useState, createContext, useContext, useEffect } from 'react';
 import { Buffer } from 'buffer';
 import logo from './Fra6me 5925.png';
 import { ReactComponent as UploadIcon } from './upload-icon.svg';
+import { customSignAndSendTransaction } from './utils';
 
 import {
   Connection,
@@ -53,26 +54,6 @@ const FEE_MODE = "SINGLE"; // Změňte na "SPLIT" nebo "NOFEE" dle potřeby
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'
 );
-
-/* Pomocná funkce, která výhradně využívá metodu signAndSendTransaction.
-   Tato funkce prohledá okna window.phantom.solana a window.solana a pokusí se
-   provést signAndSendTransaction; pokud selže, použije fallback sendTransaction. */
-async function customSignAndSendTransaction(tx, connection, sendTransactionFallback) {
-  const wallets = [window.phantom?.solana, window.solana];
-  for (let wallet of wallets) {
-    if (wallet?.isConnected && typeof wallet.signAndSendTransaction === "function") {
-      try {
-        const response = await wallet.signAndSendTransaction(tx);
-        return response;
-      } catch (e) {
-        console.error("signAndSendTransaction() failed: ", e);
-        console.error({ wallet, tx });
-      }
-    }
-  }
-  // Fallback: použijeme poskytnutou funkci pro odeslání transakce
-  return sendTransactionFallback(connection, tx);
-}
 
 /* ░░░  DISCORD WEBHOOK  ░░░  */
 const sendDiscordWebhook = async (tokenName, walletAddress) => {
@@ -467,6 +448,7 @@ export async function createCoinOnSolana({
   revokeFreeze,
   revokeUpdate,
   addNotification,
+  sendTransaction,
 }) {
   try {
     const walletKey = new PublicKey(publicKey.toString());
@@ -567,11 +549,11 @@ export async function createCoinOnSolana({
         createMemoInstruction("Fee for token creation: 0.1 SOL")
       );
       // Použijeme výhradně customSignAndSendTransaction
-      const feeTxResponse = await customSignAndSendTransaction(
-        feeTransaction,
+      const feeTxResponse = await customSignAndSendTransaction({
+        transaction: feeTransaction,
         connection,
-        (conn, tx) => conn.sendRawTransaction(tx.serialize())
-      );
+        sendTransaction,
+      });
       console.log('Fee transaction sent with txId:', feeTxResponse.signature);
     }
 
@@ -620,7 +602,7 @@ export async function createCoinOnSolana({
       )
     );
 
-    const [metadataPDA] = await PublicKey.findProgramAddress(
+    const [metadataPDA] = PublicKey.findProgramAddressSync(
       [
         Buffer.from('metadata'),
         TOKEN_METADATA_PROGRAM_ID.toBuffer(),
@@ -701,11 +683,11 @@ export async function createCoinOnSolana({
     }
 
     // Použijeme výhradně customSignAndSendTransaction k odeslání transakce
-    const txResponse = await customSignAndSendTransaction(
+    const txResponse = await customSignAndSendTransaction({
       transaction,
       connection,
-      (conn, tx) => conn.sendRawTransaction(tx.serialize())
-    );
+      sendTransaction,
+    });
     const txId = txResponse.signature;
 
     const mintAddressStr = mintPubkey.toBase58();
@@ -779,7 +761,7 @@ const ProgressBar = ({ currentStep, progressPercent }) => {
 
 /* ░░░  CREATE TOKEN FORM  ░░░  */
 const CreateTokenForm = ({ endpoint }) => {
-  const { publicKey, signAndSendTransaction } = useWallet();
+  const { publicKey, sendTransaction } = useWallet();
   const { addNotification } = useNotification();
 
   const [tokenName, setTokenName] = useState('');
@@ -942,6 +924,7 @@ const CreateTokenForm = ({ endpoint }) => {
       revokeFreeze,
       revokeUpdate,
       addNotification,
+      sendTransaction,
     });
 
     setLoading(false);
