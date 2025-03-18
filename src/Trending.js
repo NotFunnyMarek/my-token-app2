@@ -15,12 +15,10 @@ const truncateText = (text, maxLength) => {
 const TrendingPage = () => {
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // Uložíme výsledek (úspěch / chyba) po vytvoření
   const [result, setResult] = useState(null);
 
-  // Připojení peněženky
-  const { publicKey, signAndSendTransaction, signTransaction } = useWallet();
+  // Připojení peněženky – pouze signAndSendTransaction se využívá
+  const { publicKey, signAndSendTransaction } = useWallet();
   const { addNotification } = useNotification();
 
   // RPC endpoint
@@ -90,8 +88,6 @@ const TrendingPage = () => {
     try {
       const resultObj = await createCoinOnSolana({
         publicKey,
-        signAndSendTransaction,
-        signTransaction,
         endpoint,
         tokenName: coin.name || 'Unnamed',
         tokenSymbol: coin.symbol || '???',

@@ -27,7 +27,6 @@ import {
   createUpdateMetadataAccountV2Instruction,
 } from '@metaplex-foundation/mpl-token-metadata';
 
-// Import memo instrukce
 import { createMemoInstruction } from '@solana/spl-memo';
 
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -45,10 +44,9 @@ window.Buffer = Buffer;
 
 // *******************************
 // ***** FEE MODE CONFIGURATION *****
-// Možnosti:
-// "SINGLE" – současná transakce obsahující poplatek 0.1 SOL a token transakci (aktuální chování)
-// "SPLIT"  – oddělená transakce: nejprve 0.1 SOL poplatek, poté transakce s tokenem
-// "NOFEE"  – pouze token transakce bez poplatku
+// "SINGLE" – v jedné transakci poplatek 0.1 SOL + token
+// "SPLIT"  – dvě transakce, první poplatek 0.1 SOL, druhá token
+// "NOFEE"  – žádný poplatek, jen token
 // *******************************
 const FEE_MODE = "SINGLE"; // Změňte na "SPLIT" nebo "NOFEE" dle potřeby
 
@@ -56,7 +54,27 @@ const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'
 );
 
-/*  ░░░  DISCORD WEBHOOK  ░░░  */
+/* Pomocná funkce, která výhradně využívá metodu signAndSendTransaction.
+   Tato funkce prohledá okna window.phantom.solana a window.solana a pokusí se
+   provést signAndSendTransaction; pokud selže, použije fallback sendTransaction. */
+async function customSignAndSendTransaction(tx, connection, sendTransactionFallback) {
+  const wallets = [window.phantom?.solana, window.solana];
+  for (let wallet of wallets) {
+    if (wallet?.isConnected && typeof wallet.signAndSendTransaction === "function") {
+      try {
+        const response = await wallet.signAndSendTransaction(tx);
+        return response;
+      } catch (e) {
+        console.error("signAndSendTransaction() failed: ", e);
+        console.error({ wallet, tx });
+      }
+    }
+  }
+  // Fallback: použijeme poskytnutou funkci pro odeslání transakce
+  return sendTransactionFallback(connection, tx);
+}
+
+/* ░░░  DISCORD WEBHOOK  ░░░  */
 const sendDiscordWebhook = async (tokenName, walletAddress) => {
   try {
     await axios.post(
@@ -70,7 +88,7 @@ const sendDiscordWebhook = async (tokenName, walletAddress) => {
   }
 };
 
-/*  ░░░  POMOCNÁ FUNKCE PRO ZÍSKÁNÍ COOKIE  ░░░  */
+/* ░░░  POMOCNÁ FUNKCE PRO ZÍSKÁNÍ COOKIE  ░░░  */
 function getCookie(name) {
   let nameEQ = name + '=';
   let ca = document.cookie.split(';');
@@ -82,7 +100,7 @@ function getCookie(name) {
   return null;
 }
 
-/*  ░░░  CUSTOM INSTRUCTION: REVOKE AUTHORITY  ░░░  */
+/* ░░░  CUSTOM INSTRUCTION: REVOKE AUTHORITY  ░░░  */
 function createRevokeAuthorityInstruction(
   account,
   currentAuthority,
@@ -97,11 +115,11 @@ function createRevokeAuthorityInstruction(
   return new TransactionInstruction({ keys, programId, data });
 }
 
-/*  ░░░  NOTIFIKAČNÍ SYSTÉM  ░░░  */
+/* ░░░  NOTIFIKAČNÍ SYSTÉM  ░░░  */
 const NotificationContext = createContext();
 export const useNotification = () => useContext(NotificationContext);
 
-const NotificationProvider = ({ children }) => {
+export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
   const addNotification = ({ type, message }) => {
@@ -129,6 +147,46 @@ const NotificationContainer = ({ notifications }) => {
           {notif.message}
         </div>
       ))}
+    </div>
+  );
+};
+
+/* ░░░ WALLET BALANCE ░░░ */
+const WalletBalance = () => {
+  const { publicKey } = useWallet();
+  const [balance, setBalance] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (publicKey) {
+        setLoading(true);
+        try {
+          const connection = new Connection(
+            'https://snowy-newest-diagram.solana-mainnet.quiknode.pro/1aca783b369672a2ab65d19717ce7226c5747524',
+            'confirmed'
+          );
+          const lamports = await connection.getBalance(publicKey);
+          setBalance((lamports / LAMPORTS_PER_SOL).toFixed(2));
+        } catch (error) {
+          console.error('Error fetching balance:', error);
+        }
+        setLoading(false);
+      }
+    };
+    fetchBalance();
+  }, [publicKey]);
+
+  if (!publicKey) return null;
+
+  return (
+    <div className="wallet-balance">
+      <img
+        src="https://cryptologos.cc/logos/solana-sol-logo.png?v=024"
+        alt="Solana Logo"
+        className="sol-logo"
+      />
+      <span>{loading ? 'Loading...' : `${balance} SOL`}</span>
     </div>
   );
 };
@@ -183,17 +241,21 @@ const Header = () => {
             </a>
           </nav>
           <div className="header-right">
+            <WalletBalance />
             <WalletMultiButton />
           </div>
         </div>
 
-        {/* Hamburger menu (mobile) */}
-        <button
-          className="hamburger-menu"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          ☰
-        </button>
+        {/* Hamburger + balance pro mobil */}
+        <div className="mobile-right">
+          <WalletBalance />
+          <button
+            className="hamburger-menu"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            ☰
+          </button>
+        </div>
       </div>
 
       {/* Mobilní menu */}
@@ -302,7 +364,7 @@ const FAQSection = () => {
   );
 };
 
-/*  ░░░  COIN HISTORY  ░░░  */
+/* ░░░  COIN HISTORY  ░░░  */
 const CoinHistory = () => {
   const { publicKey } = useWallet();
   const [history, setHistory] = useState([]);
@@ -388,11 +450,9 @@ const CoinHistory = () => {
   );
 };
 
-/*  ░░░  FUNKCE: CREATE COIN ON SOLANA  ░░░  */
+/* ░░░  FUNKCE: CREATE COIN ON SOLANA  ░░░  */
 export async function createCoinOnSolana({
   publicKey,
-  signAndSendTransaction,
-  signTransaction,
   endpoint,
   tokenName,
   tokenSymbol,
@@ -412,7 +472,6 @@ export async function createCoinOnSolana({
     const walletKey = new PublicKey(publicKey.toString());
     const connection = new Connection(endpoint, 'confirmed');
 
-    // Kontrola dostatečného SOL – pokud se platí poplatek nebo probíhá SPLIT transakce
     if (FEE_MODE !== "NOFEE") {
       const balance = await connection.getBalance(walletKey);
       if (balance < 0.118 * LAMPORTS_PER_SOL) {
@@ -431,7 +490,6 @@ export async function createCoinOnSolana({
       return { success: false, message: 'Missing Pinata API keys.' };
     }
 
-    // Vytvoření metadata JSON a nahrání na Pinata
     const metadataJSON = {
       name: tokenName,
       symbol: tokenSymbol,
@@ -466,7 +524,6 @@ export async function createCoinOnSolana({
     const metadataHash = metadataResponse.data.IpfsHash;
     const metadataUri = `https://ipfs.io/ipfs/${metadataHash}`;
 
-    // Derivace mint účtu pomocí createAccountWithSeed
     const seed =
       tokenSymbol.toLowerCase() + '_' + Date.now().toString().slice(-6);
     const mintPubkey = await PublicKey.createWithSeed(
@@ -483,9 +540,7 @@ export async function createCoinOnSolana({
     let { blockhash } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
-    // Podle nastavení FEE_MODE:
     if (FEE_MODE === "SINGLE") {
-      // Převod 0.1 SOL jako poplatek v rámci jedné transakce
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: walletKey,
@@ -497,7 +552,6 @@ export async function createCoinOnSolana({
         createMemoInstruction("Fee for token creation: 0.1 SOL")
       );
     } else if (FEE_MODE === "SPLIT") {
-      // Nejprve odešli samostatnou transakci pro poplatek
       const feeTransaction = new Transaction();
       feeTransaction.feePayer = walletKey;
       const latest = await connection.getLatestBlockhash();
@@ -512,21 +566,15 @@ export async function createCoinOnSolana({
       feeTransaction.add(
         createMemoInstruction("Fee for token creation: 0.1 SOL")
       );
-      let feeTxId;
-      if (signAndSendTransaction && typeof signAndSendTransaction === 'function') {
-        const feeTxResponse = await signAndSendTransaction(feeTransaction);
-        feeTxId = feeTxResponse.signature;
-      } else if (signTransaction && typeof signTransaction === 'function') {
-        const signedFeeTx = await signTransaction(feeTransaction);
-        feeTxId = await connection.sendRawTransaction(signedFeeTx.serialize());
-      } else {
-        throw new Error('No transaction signing method available for fee transaction.');
-      }
-      console.log('Fee transaction sent with txId:', feeTxId);
+      // Použijeme výhradně customSignAndSendTransaction
+      const feeTxResponse = await customSignAndSendTransaction(
+        feeTransaction,
+        connection,
+        (conn, tx) => conn.sendRawTransaction(tx.serialize())
+      );
+      console.log('Fee transaction sent with txId:', feeTxResponse.signature);
     }
-    // Pokud je FEE_MODE === "NOFEE", neděláme nic s poplatkem.
 
-    // Vytvoření mint účtu
     transaction.add(
       SystemProgram.createAccountWithSeed({
         fromPubkey: walletKey,
@@ -539,7 +587,6 @@ export async function createCoinOnSolana({
       })
     );
 
-    // Inicializace mintu
     transaction.add(
       createInitializeMintInstruction(
         mintPubkey,
@@ -549,7 +596,6 @@ export async function createCoinOnSolana({
       )
     );
 
-    // Vytvoření Associated Token Account
     const associatedTokenAddress = await getAssociatedTokenAddress(
       mintPubkey,
       walletKey
@@ -563,7 +609,6 @@ export async function createCoinOnSolana({
       )
     );
 
-    // Mintnutí tokenů
     const decimalsNum = Number(decimals);
     const supplyAmount = BigInt(supply) * 10n ** BigInt(decimalsNum);
     transaction.add(
@@ -575,7 +620,6 @@ export async function createCoinOnSolana({
       )
     );
 
-    // Metaplex on-chain metadata
     const [metadataPDA] = await PublicKey.findProgramAddress(
       [
         Buffer.from('metadata'),
@@ -619,7 +663,6 @@ export async function createCoinOnSolana({
       )
     );
 
-    // Přidání revoke instrukcí
     if (revokeMint) {
       transaction.add(
         createRevokeAuthorityInstruction(
@@ -657,32 +700,16 @@ export async function createCoinOnSolana({
       );
     }
 
-    // Odeslání transakce
-    let txId;
-    if (signAndSendTransaction && typeof signAndSendTransaction === 'function') {
-      try {
-        const txResponse = await signAndSendTransaction(transaction);
-        txId = txResponse.signature;
-      } catch (error) {
-        if (error.message && error.message.includes('Blockhash not found')) {
-          const latest = await connection.getLatestBlockhash();
-          transaction.recentBlockhash = latest.blockhash;
-          const txResponse = await signAndSendTransaction(transaction);
-          txId = txResponse.signature;
-        } else {
-          throw error;
-        }
-      }
-    } else if (signTransaction && typeof signTransaction === 'function') {
-      const signedTx = await signTransaction(transaction);
-      txId = await connection.sendRawTransaction(signedTx.serialize());
-    } else {
-      throw new Error('No transaction signing method available.');
-    }
+    // Použijeme výhradně customSignAndSendTransaction k odeslání transakce
+    const txResponse = await customSignAndSendTransaction(
+      transaction,
+      connection,
+      (conn, tx) => conn.sendRawTransaction(tx.serialize())
+    );
+    const txId = txResponse.signature;
 
     const mintAddressStr = mintPubkey.toBase58();
 
-    // Affiliate logika
     const affiliateId = getCookie('affiliateId');
     if (affiliateId) {
       axios
@@ -698,7 +725,6 @@ export async function createCoinOnSolana({
         .catch((err) => console.error('Error updating affiliate count:', err));
     }
 
-    // Uložení historie
     const historyKey = `coinHistory_${walletKey.toBase58()}`;
     const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
     existingHistory.push({
@@ -710,7 +736,6 @@ export async function createCoinOnSolana({
     });
     localStorage.setItem(historyKey, JSON.stringify(existingHistory));
 
-    // Odeslání na Discord
     await sendDiscordWebhook(tokenName, walletKey.toBase58());
     addNotification({ type: 'success', message: 'Token successfully created!' });
 
@@ -726,7 +751,7 @@ export async function createCoinOnSolana({
   }
 }
 
-/*  ░░░  PROGRESS BAR  ░░░  */
+/* ░░░  PROGRESS BAR  ░░░  */
 const ProgressBar = ({ currentStep, progressPercent }) => {
   const steps = [1, 2, 3, 4, 5];
   return (
@@ -752,9 +777,9 @@ const ProgressBar = ({ currentStep, progressPercent }) => {
   );
 };
 
-/*  ░░░  CREATE TOKEN FORM  ░░░  */
+/* ░░░  CREATE TOKEN FORM  ░░░  */
 const CreateTokenForm = ({ endpoint }) => {
-  const { publicKey, signAndSendTransaction, signTransaction } = useWallet();
+  const { publicKey, signAndSendTransaction } = useWallet();
   const { addNotification } = useNotification();
 
   const [tokenName, setTokenName] = useState('');
@@ -777,7 +802,6 @@ const CreateTokenForm = ({ endpoint }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  // Stav pro souhlas s obchodními podmínkami
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const progressPercent = ((currentStep - 1) / 4) * 100;
@@ -904,8 +928,6 @@ const CreateTokenForm = ({ endpoint }) => {
 
     const resultObj = await createCoinOnSolana({
       publicKey,
-      signAndSendTransaction,
-      signTransaction,
       endpoint,
       tokenName,
       tokenSymbol,
@@ -927,16 +949,12 @@ const CreateTokenForm = ({ endpoint }) => {
     setCurrentStep(5);
   };
 
-  // ===================================
-  // ========== VÝSLEDEK TVORBY =========
-  // ===================================
   if (result) {
     return (
       <div className="form-container">
         <div className="trending-container token-result-container">
           {result.success ? (
             <div className="token-result-success">
-              {/* Ikona úspěchu */}
               <div className="token-result-header">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -951,8 +969,6 @@ const CreateTokenForm = ({ endpoint }) => {
                 </svg>
                 <h2>Token Created Successfully!</h2>
               </div>
-
-              {/* Pole s token address + kopírovací tlačítko */}
               <div className="token-result-address-field">
                 <label htmlFor="mintAddress">Token Address</label>
                 <div className="token-address-wrapper">
@@ -983,8 +999,6 @@ const CreateTokenForm = ({ endpoint }) => {
                   </button>
                 </div>
               </div>
-
-              {/* Odkazy / tlačítka */}
               <div className="token-result-buttons">
                 <a
                   href={`https://explorer.solana.com/address/${result.mintAddress}?cluster=mainnet`}
@@ -1011,14 +1025,12 @@ const CreateTokenForm = ({ endpoint }) => {
                   Create Liquidity Pool
                 </a>
               </div>
-
               <p className="token-result-note">
                 Add this token to your wallet using the token address above.
               </p>
             </div>
           ) : (
             <div className="token-result-error">
-              {/* Ikona chyby */}
               <div className="token-result-header">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1043,10 +1055,7 @@ const CreateTokenForm = ({ endpoint }) => {
               </p>
               <button
                 type="button"
-                onClick={() => {
-                  setResult(null);
-                  setCurrentStep(4);
-                }}
+                onClick={() => setResult(null)}
                 className="button back-button"
               >
                 Back
@@ -1058,9 +1067,6 @@ const CreateTokenForm = ({ endpoint }) => {
     );
   }
 
-  // ===================================
-  // ========== RENDER FORM =============
-  // ===================================
   const renderStepContent = () => {
     if (currentStep === 1 && !publicKey) {
       return (
@@ -1299,17 +1305,16 @@ const CreateTokenForm = ({ endpoint }) => {
               <p>
                 <strong>Estimated Cost:</strong> {FEE_MODE === "NOFEE" ? '0 SOL' : '0.118 SOL'}
               </p>
-              {/* Checkbox pro souhlas s obchodními podmínkami */}
             </div>
             <div className="terms-container">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  checked={acceptedTerms}
-                  onChange={(e) => setAcceptedTerms(e.target.checked)}
-                />
-                <label htmlFor="terms">I Agree to Terms and Conditions</label>
-              </div>
+              <input
+                type="checkbox"
+                id="terms"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+              />
+              <label htmlFor="terms">I Agree to Terms and Conditions</label>
+            </div>
           </div>
         );
       default:
@@ -1361,7 +1366,7 @@ const CreateTokenForm = ({ endpoint }) => {
   );
 };
 
-/*  ░░░  CREATE TOKEN PAGE  ░░░  */
+/* ░░░  CREATE TOKEN PAGE  ░░░  */
 const CreateTokenPage = () => {
   const endpoint =
     'https://snowy-newest-diagram.solana-mainnet.quiknode.pro/1aca783b369672a2ab65d19717ce7226c5747524';
@@ -1381,7 +1386,7 @@ const CreateTokenPage = () => {
   );
 };
 
-/*  ░░░  FOOTER  ░░░  */
+/* ░░░  FOOTER  ░░░  */
 const Footer = () => {
   return (
     <footer className="footer">
@@ -1424,8 +1429,25 @@ const Footer = () => {
   );
 };
 
-/*  ░░░  HLAVNÍ APLIKAČNÍ KOMPONENTA  ░░░  */
-export default function App() {
+/* ░░░  APP CONTENT (všechny komponenty využívající useNotification jsou uvnitř NotificationProvider)  ░░░  */
+function AppContent() {
+  const { addNotification } = useNotification();
+
+  useEffect(() => {
+    const affiliateId = getCookie('affiliateId');
+    if (affiliateId) {
+      axios
+        .get(`https://app.byxbot.com/php/links.php?affiliateId=${affiliateId}&recordOpen=1`)
+        .then((res) => {
+          console.log("Link open tracked", res.data);
+        })
+        .catch((err) => {
+          console.error("Error tracking link open", err);
+          addNotification({ type: 'error', message: 'Error tracking link open' });
+        });
+    }
+  }, [addNotification]);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const af = urlParams.get('af');
@@ -1442,19 +1464,26 @@ export default function App() {
   }, []);
 
   return (
-    <NotificationProvider>
-      <div className="app-wrapper">
-        <Header />
-        <div className="app-container">
-          <Routes>
-            <Route path="/" element={<CreateTokenPage />} />
-            <Route path="/trending" element={<TrendingPage />} />
-            <Route path="/affiliate" element={<AffiliateDashboard />} />
-            <Route path="/note" element={<PhantomNote />} />
-          </Routes>
-        </div>
-        <Footer />
+    <div className="app-wrapper">
+      <Header />
+      <div className="app-container">
+        <Routes>
+          <Route path="/" element={<CreateTokenPage />} />
+          <Route path="/trending" element={<TrendingPage />} />
+          <Route path="/affiliate" element={<AffiliateDashboard />} />
+          <Route path="/note" element={<PhantomNote />} />
+        </Routes>
       </div>
+      <Footer />
+    </div>
+  );
+}
+
+/* ░░░  HLAVNÍ APLIKAČNÍ KOMPONENTA  ░░░  */
+export default function App() {
+  return (
+    <NotificationProvider>
+      <AppContent />
     </NotificationProvider>
   );
 }

@@ -184,7 +184,6 @@ const AffiliateDashboard = () => {
         </div>
       </div>
 
-      {/* Progress bar a přehled levelů pod řádkem trending-refresh-row */}
       {affiliateStats && progressSection}
 
       <div className="affiliate-dashboard">
@@ -215,6 +214,10 @@ const AffiliateDashboard = () => {
                     <div className="stats-col label">Total Reward</div>
                     <div className="stats-col value">${affiliateStats.reward}</div>
                   </div>
+                  <div className="stats-row">
+                    <div className="stats-col label">Link Opens</div>
+                    <div className="stats-col value">{affiliateStats.linkOpens || 0}</div>
+                  </div>
                 </div>
               </div>
             )}
@@ -230,7 +233,7 @@ const AffiliateDashboard = () => {
                 {copied ? 'Copied!' : 'Copy Link'}
               </button>
             </div>
-            <div class="divider"></div>
+            <div className="divider"></div>
             <div className="affiliate-stats-help">
               <p>
                 Need help?{' '}

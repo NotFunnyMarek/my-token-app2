@@ -1,0 +1,9 @@
+tak to je vše, prosím udělej toto a napiš všechny kody uplně celé prosím
+
+přidej do headeru vedle peněženky nějaké okénko, které bude vidět jen pokud je peněženka připojena a bude tam vidět balance solany v peněžence a malé logo solany
+
+a přidej prosím do affiliate to, pokud to nějak jde, aby tam bylo v tom přehledu ještě nějak vidět kolik lidí otevřelo tento odkaz
+
+bylo by fajn kdyby se to asi nějak zapisovalo do databáze pokud někdo link otevře, tak se k příslušnému linku do tabulky zapíše že byl otevřen, napiš mi proto i slq pro přidání potřebného sloupce do existující tabulky affiliate, nový sloupec se bude jmenovat "linkOpens"
+
+

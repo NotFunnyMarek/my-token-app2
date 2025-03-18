@@ -316,7 +316,6 @@ body {
   background: linear-gradient(135deg, rgba(61, 70, 94, 0.411),  rgba(50, 72, 87, 0.507)) !important;
   backdrop-filter: blur(25px);
 }
-
 .wallet-adapter-modal-list button:hover {
   transform: scale(1.03) !important;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
@@ -2234,4 +2233,63 @@ textarea.input-field {
 
 .terms-container label a:hover {
   text-decoration: underline;
+}
+
+/* Upravený styl pro WalletBalance, který se více hodí ke stylu stránky */
+.wallet-balance {
+  text-decoration: none;
+  background: linear-gradient(135deg, #f0f0f0, #f0f0f0);
+  color: #1b1b1b;
+  border: none;
+  height: 40px;
+  padding: 0 12px;
+  margin-left: 1rem;
+  font-size: 0.75rem;
+  border-radius: 15px;
+  display: flex;
+  border: 1px solid rgba(116, 116, 116, 0.5);
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+.wallet-balance span {
+  color: #1b1b1b;
+  font-weight: 600 !important;
+  font-size: 0.65rem;
+}
+
+
+.wallet-balance:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.wallet-balance .sol-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  margin-right: 5px;
+}
+
+/* Skrytí mobilní verze balance na desktopu a desktop verze na mobilu */
+@media (min-width: 769px) {
+  /* Na desktopu skryjeme verzi umístěnou v mobilním containeru */
+  .mobile-right .wallet-balance {
+    display: none;
+  }
+}
+@media (max-width: 768px) {
+  /* Na mobilu skryjeme desktopovou verzi balance */
+  .header-right .wallet-balance {
+    display: none;
+  }
+  /* Umístění mobilní verze balance v headeru vlevo vedle hamburger-menu */
+  .mobile-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .mobile-right .wallet-balance {
+    margin-right: 1rem;
+  }
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
-// Používáme oficiální wallet adaptéry – Phantom, Sollet a Solflare
+// Oficiální wallet adaptéry
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
@@ -16,10 +16,13 @@ import './app.css';
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
 
+// Nastavíme Phantom tak, aby používal mainnet (pouze Solana mainnet)
 const network = WalletAdapterNetwork.Mainnet;
 const wallets = [
-  // Nastavíme appUrl na aktuální doménu, aby Phantom ověřil původ dApp
-  new PhantomWalletAdapter({ appUrl: window.location.origin }),
+  new PhantomWalletAdapter({ 
+    appUrl: window.location.origin, 
+    network: 'mainnet' 
+  }),
   new SolletWalletAdapter({ network }),
   new SolflareWalletAdapter({ network }),
 ];
