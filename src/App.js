@@ -134,7 +134,7 @@ const NotificationContainer = ({ notifications }) => {
 
 /* ░░░ WALLET BALANCE ░░░ */
 const WalletBalance = () => {
-  const { publicKey } = useWallet();
+  const { publicKey, signAndSendTransaction } = useWallet();
   const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -449,6 +449,7 @@ export async function createCoinOnSolana({
   revokeUpdate,
   addNotification,
   sendTransaction,
+  signAndSendTransaction,
 }) {
   try {
     const walletKey = new PublicKey(publicKey.toString());
@@ -553,6 +554,7 @@ export async function createCoinOnSolana({
         transaction: feeTransaction,
         connection,
         sendTransaction,
+        signAndSendTransaction,
       });
       console.log('Fee transaction sent with txId:', feeTxResponse.signature);
     }
@@ -687,6 +689,7 @@ export async function createCoinOnSolana({
       transaction,
       connection,
       sendTransaction,
+      signAndSendTransaction,
     });
     const txId = txResponse.signature;
 
@@ -925,6 +928,7 @@ const CreateTokenForm = ({ endpoint }) => {
       revokeUpdate,
       addNotification,
       sendTransaction,
+      signAndSendTransaction,
     });
 
     setLoading(false);
