@@ -1,0 +1,92 @@
+/* Overlay, který zakryje celou stránku a rozmaže pozadí */
+.tp-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  /* Kontejner samotného modalu s jemným posunem */
+  .tp-modal {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-20px);
+    animation: slideDown 0.4s forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .tp-modal h2 {
+    margin-top: 0;
+  }
+  
+  /* Trustpilot tlačítko uvnitř widgetu */
+  .trustpilot-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 2px solid #00b67a;
+    border-radius: 25px;
+    background-color: #fff;
+    color: #030303;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  
+  .trustpilot-button:hover {
+    background-color: #141414;
+    color: #fff;
+    border: 2px solid #e7e7e7e5;
+  }
+  
+  /* Zelená hvězdička */
+  .star {
+    color: #00b67a;
+  }
+  
+  /* Zavírací tlačítko */
+  .tp-modal-close {
+    margin-top: 20px;
+    padding: 10px 20px;
+    border: none;
+    background-color: #f44336;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .tp-modal-close:hover {
+    background-color: #d32f2f;
+  }
+  
+  /* Dodatečná animace pro rating sekci v Trending.js */
+  .trustpilot-rating.animated {
+    animation: fadeIn 0.5s ease-out;
+    margin-top: 20px;
+  }
+  

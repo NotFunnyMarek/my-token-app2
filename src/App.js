@@ -1,5 +1,5 @@
 /* global BigInt */
-import React, { useState, createContext, useContext, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Buffer } from 'buffer';
 import logo from './Fra6me 5925.png';
 import { ReactComponent as UploadIcon } from './upload-icon.svg';
@@ -134,7 +134,7 @@ const NotificationContainer = ({ notifications }) => {
 
 /* ░░░ WALLET BALANCE ░░░ */
 const WalletBalance = () => {
-  const { publicKey, signAndSendTransaction } = useWallet();
+  const { publicKey } = useWallet();
   const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -188,7 +188,7 @@ const Header = () => {
       <div className="header-top">
         <p className="headerr">
           <Link to="/note" style={{ textDecoration: 'none', color: 'inherit' }}>
-            ⚡ OFFICIALLY WHITELISTED BY PHANTOM! "VIEW MORE" ⚡
+            ⚡ OFFICIALLY WHITELISTED BY PHANTOM! ⚡ →
           </Link>
         </p>
       </div>
@@ -279,7 +279,7 @@ const Header = () => {
   );
 };
 
-/*  ░░░  INSTRUCTIONS SECTION  ░░░  */
+/* ░░░  INSTRUCTIONS SECTION  ░░░  */
 const InstructionsSection = () => {
   return (
     <div className="instructions-section">
@@ -306,7 +306,7 @@ const InstructionsSection = () => {
   );
 };
 
-/*  ░░░  FAQ SECTION  ░░░  */
+/* ░░░  FAQ SECTION  ░░░  */
 const FAQItem = ({ question, answer, defaultExpanded = false }) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
   return (
@@ -431,6 +431,20 @@ const CoinHistory = () => {
   );
 };
 
+/* Helper: Format large numbers to human readable (e.g. 1B, 900M, etc.) */
+const formatSupplyValue = (value) => {
+  const num = Number(value);
+  if (num >= 1e9) {
+    return (num / 1e9).toFixed(1) + 'B';
+  } else if (num >= 1e6) {
+    return (num / 1e6).toFixed(1) + 'M';
+  } else if (num >= 1e3) {
+    return (num / 1e3).toFixed(1) + 'K';
+  } else {
+    return num;
+  }
+};
+
 /* ░░░  FUNKCE: CREATE COIN ON SOLANA  ░░░  */
 export async function createCoinOnSolana({
   publicKey,
@@ -549,7 +563,6 @@ export async function createCoinOnSolana({
       feeTransaction.add(
         createMemoInstruction("Fee for token creation: 0.1 SOL")
       );
-      // Použijeme výhradně customSignAndSendTransaction
       const feeTxResponse = await customSignAndSendTransaction({
         transaction: feeTransaction,
         connection,
@@ -684,7 +697,6 @@ export async function createCoinOnSolana({
       );
     }
 
-    // Použijeme výhradně customSignAndSendTransaction k odeslání transakce
     const txResponse = await customSignAndSendTransaction({
       transaction,
       connection,
@@ -692,7 +704,6 @@ export async function createCoinOnSolana({
       signAndSendTransaction,
     });
     const txId = txResponse.signature;
-
     const mintAddressStr = mintPubkey.toBase58();
 
     const affiliateId = getCookie('affiliateId');
@@ -763,7 +774,7 @@ const ProgressBar = ({ currentStep, progressPercent }) => {
 };
 
 /* ░░░  CREATE TOKEN FORM  ░░░  */
-const CreateTokenForm = ({ endpoint }) => {
+const CreateTokenForm = ({ endpoint, onTokenCreated }) => {
   const { publicKey, sendTransaction, signAndSendTransaction } = useWallet();
   const { addNotification } = useNotification();
 
@@ -790,6 +801,15 @@ const CreateTokenForm = ({ endpoint }) => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const progressPercent = ((currentStep - 1) / 4) * 100;
+
+  // Info tooltips text – použijeme custom tlačítko s tooltipem (viz .info-icon)
+  const infoTexts = {
+    tokenName: "Enter the display name of your token.",
+    tokenSymbol: "Enter the symbol (max 10 characters).",
+    decimals: "Number of decimals determines token divisibility (0-18). If you don't know, ignore.",
+    supply: "Enter the total number of tokens (numeric value). If you don't know, ignore.",
+    description: "Provide a brief description of your token.",
+  };
 
   const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
@@ -933,11 +953,18 @@ const CreateTokenForm = ({ endpoint }) => {
 
     setLoading(false);
     setResult(resultObj);
+    if (resultObj.success && onTokenCreated) {
+      onTokenCreated(resultObj);
+    }
+    // Nastavíme currentStep na 5, aby se zobrazil steps bar i ve výsledku
     setCurrentStep(5);
   };
 
+  // Pokud máme výsledek, zobrazíme i ProgressBar nad výsledkovým screenem
   if (result) {
     return (
+      <div>
+      <ProgressBar currentStep={currentStep} progressPercent={progressPercent} />
       <div className="form-container">
         <div className="trending-container token-result-container">
           {result.success ? (
@@ -957,7 +984,7 @@ const CreateTokenForm = ({ endpoint }) => {
                 <h2>Token Created Successfully!</h2>
               </div>
               <div className="token-result-address-field">
-                <label htmlFor="mintAddress">Token Address</label>
+                <label className="mintlabel" htmlFor="mintAddress">Token Address</label>
                 <div className="token-address-wrapper">
                   <input
                     id="mintAddress"
@@ -1015,6 +1042,15 @@ const CreateTokenForm = ({ endpoint }) => {
               <p className="token-result-note">
                 Add this token to your wallet using the token address above.
               </p>
+              <div className="divider"></div>
+              <div className="rating-section">
+                <button
+                  className="result-rating-button"
+                  onClick={() => window.open('https://www.trustpilot.com/review/coincreate.org', '_blank')}
+                >
+                  Rate your experience on ★ Trustpilot
+                </button>
+              </div>
             </div>
           ) : (
             <div className="token-result-error">
@@ -1051,6 +1087,7 @@ const CreateTokenForm = ({ endpoint }) => {
           )}
         </div>
       </div>
+      </div>
     );
   }
 
@@ -1070,7 +1107,12 @@ const CreateTokenForm = ({ endpoint }) => {
           <div className="form-step">
             <div className="name-symbol-container">
               <div className="form-group">
-                <label htmlFor="tokenName">Token Name</label>
+              <div className='name-label'>
+                <label htmlFor="tokenName">
+                  Token Name
+                  <button className="info-icon" data-tooltip={infoTexts.tokenName}>i</button>
+                </label>
+                </div>
                 <input
                   id="tokenName"
                   type="text"
@@ -1082,7 +1124,12 @@ const CreateTokenForm = ({ endpoint }) => {
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="tokenSymbol">Token Symbol</label>
+                <div className='symbol-label'>
+                <label htmlFor="tokenSymbol">
+                  Token Symbol
+                  <button className="info-icon" data-tooltip={infoTexts.tokenSymbol}>i</button>
+                </label>
+                </div>
                 <input
                   id="tokenSymbol"
                   type="text"
@@ -1123,13 +1170,29 @@ const CreateTokenForm = ({ endpoint }) => {
                 onChange={handleFileChange}
               />
             </div>
+
+            <div className="rating-section2">
+                <button
+                  className="result-rating-button"
+                  onClick={() => window.open('https://www.trustpilot.com/review/coincreate.org', '_blank')}
+                >
+                  Rate us on ★ Trustpilot
+                </button>
+              </div>
+
+
           </div>
         );
       case 2:
         return (
           <div className="form-step">
             <div className="form-group">
-              <label htmlFor="decimals">Decimals (0-18)</label>
+            <div className="decimals-label">
+              <label htmlFor="decimals">
+                Decimals (0-18)
+                <button className="info-icon" data-tooltip={infoTexts.decimals}>i</button>
+              </label>
+              </div>
               <input
                 id="decimals"
                 type="number"
@@ -1142,7 +1205,14 @@ const CreateTokenForm = ({ endpoint }) => {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="supply">Supply</label>
+              {/* supply-label container s fixnutým rozložením */}
+              <div className="supply-label">
+                <div className="supply-left">
+                  <label className="supplytext" htmlFor="supply">Supply</label>
+                  <button className="info-icon" data-tooltip={infoTexts.supply}>i</button>
+                </div>
+                <span className="supply-variable">{formatSupplyValue(supply)}</span>
+              </div>
               <input
                 id="supply"
                 type="number"
@@ -1159,7 +1229,10 @@ const CreateTokenForm = ({ endpoint }) => {
           <div className="form-step">
             <div className="input-row">
               <div className="form-group input-field-container">
-                <label htmlFor="description">Description</label>
+                <label htmlFor="description">
+                  Description
+                  <button className="info-icon" data-tooltip={infoTexts.description}>i</button>
+                </label>
                 <textarea
                   id="description"
                   className="input-field"
@@ -1354,7 +1427,7 @@ const CreateTokenForm = ({ endpoint }) => {
 };
 
 /* ░░░  CREATE TOKEN PAGE  ░░░  */
-const CreateTokenPage = () => {
+const CreateTokenPage = ({ onTokenCreated }) => {
   const endpoint =
     'https://snowy-newest-diagram.solana-mainnet.quiknode.pro/1aca783b369672a2ab65d19717ce7226c5747524';
 
@@ -1366,7 +1439,7 @@ const CreateTokenPage = () => {
           Launch your own token on Solana in seconds. No coding required.
         </p>
       </div>
-      <CreateTokenForm endpoint={endpoint} />
+      <CreateTokenForm endpoint={endpoint} onTokenCreated={onTokenCreated} />
       <InstructionsSection />
       <FAQSection />
     </div>
@@ -1416,38 +1489,16 @@ const Footer = () => {
   );
 };
 
-/* ░░░  APP CONTENT (všechny komponenty využívající useNotification jsou uvnitř NotificationProvider)  ░░░  */
+/* ░░░  APP CONTENT  ░░░  */
 function AppContent() {
-  const { addNotification } = useNotification();
+  const [tokenCreationResult, setTokenCreationResult] = useState(null);
+
+  const handleTokenCreated = (result) => {
+    setTokenCreationResult(result);
+  };
 
   useEffect(() => {
-    const affiliateId = getCookie('affiliateId');
-    if (affiliateId) {
-      axios
-        .get(`https://app.byxbot.com/php/links.php?affiliateId=${affiliateId}&recordOpen=1`)
-        .then((res) => {
-          console.log("Link open tracked", res.data);
-        })
-        .catch((err) => {
-          console.error("Error tracking link open", err);
-          addNotification({ type: 'error', message: 'Error tracking link open' });
-        });
-    }
-  }, [addNotification]);
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const af = urlParams.get('af');
-    if (af) {
-      document.cookie = `affiliateId=${af}; path=/;`;
-    }
-    const clearAffiliateCookie = () => {
-      document.cookie = 'affiliateId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    };
-    window.addEventListener('beforeunload', clearAffiliateCookie);
-    return () => {
-      window.removeEventListener('beforeunload', clearAffiliateCookie);
-    };
+    // Případná další logika...
   }, []);
 
   return (
@@ -1455,8 +1506,14 @@ function AppContent() {
       <Header />
       <div className="app-container">
         <Routes>
-          <Route path="/" element={<CreateTokenPage />} />
-          <Route path="/trending" element={<TrendingPage />} />
+          <Route
+            path="/"
+            element={<CreateTokenPage onTokenCreated={handleTokenCreated} />}
+          />
+          <Route
+            path="/trending"
+            element={<TrendingPage onTokenCreated={handleTokenCreated} />}
+          />
           <Route path="/affiliate" element={<AffiliateDashboard />} />
           <Route path="/note" element={<PhantomNote />} />
         </Routes>

@@ -21,7 +21,7 @@ const network = WalletAdapterNetwork.Mainnet;
 const wallets = [
   new PhantomWalletAdapter({ 
     appUrl: window.location.origin, 
-    network: 'mainnet' 
+    network: 'mainnet'
   }),
   new SolletWalletAdapter({ network }),
   new SolflareWalletAdapter({ network }),

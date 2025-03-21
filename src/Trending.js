@@ -4,7 +4,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 import { createCoinOnSolana, useNotification } from './App';
-import { customSignAndSendTransaction } from './utils';
 
 // Funkce pro zkrácení textu
 const truncateText = (text, maxLength) => {
@@ -12,23 +11,19 @@ const truncateText = (text, maxLength) => {
   return text.substring(0, maxLength) + '...';
 };
 
-const TrendingPage = () => {
+const TrendingPage = ({ onTokenCreated }) => {
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  // Připojení peněženky – pouze signAndSendTransaction se využívá
   const { publicKey } = useWallet();
   const { addNotification } = useNotification();
 
-  // RPC endpoint
   const endpoint =
     'https://snowy-newest-diagram.solana-mainnet.quiknode.pro/1aca783b369672a2ab65d19717ce7226c5747524';
 
-  // Placeholder ikona
   const blankIcon = 'https://via.placeholder.com/48?text=?';
 
-  // Načtení trending coinů přes proxy
   const fetchTrendingCoins = async () => {
     setLoading(true);
     try {
@@ -107,6 +102,7 @@ const TrendingPage = () => {
 
       if (resultObj.success) {
         addNotification({ type: 'success', message: `Coin ${coin.name} created!` });
+        if (onTokenCreated) onTokenCreated(resultObj);
       } else {
         if (resultObj.message.includes('503')) {
           addNotification({
@@ -127,16 +123,12 @@ const TrendingPage = () => {
     }
   };
 
-  // =======================================
-  // ========== VÝSLEDEK TVORBY ============
-  // =======================================
   if (result) {
     return (
       <div className="form-container">
         <div className="trending-container token-result-container">
           {result.success ? (
             <div className="token-result-success">
-              {/* Ikona úspěchu */}
               <div className="token-result-header">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -151,10 +143,8 @@ const TrendingPage = () => {
                 </svg>
                 <h2>Token Created Successfully!</h2>
               </div>
-
-              {/* Pole s token address + kopírovací tlačítko */}
               <div className="token-result-address-field">
-                <label htmlFor="mintAddress">Token Address</label>
+                <label className="mintlabel" htmlFor="mintAddress">Token Address</label>
                 <div className="token-address-wrapper">
                   <input
                     id="mintAddress"
@@ -183,8 +173,6 @@ const TrendingPage = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Odkazy / tlačítka */}
               <div className="token-result-buttons">
                 <a
                   href={`https://explorer.solana.com/address/${result.mintAddress}?cluster=mainnet`}
@@ -211,14 +199,21 @@ const TrendingPage = () => {
                   Create Liquidity Pool
                 </a>
               </div>
-
               <p className="token-result-note">
                 Add this token to your wallet using the token address above.
               </p>
+              <div className="divider"></div>
+              <div className="rating-section">
+                <button
+                  className="result-rating-button"
+                  onClick={() => window.open('https://www.trustpilot.com/review/coincreate.org', '_blank')}
+                >
+                  Rate your experience on ★ Trustpilot
+                </button>
+              </div>
             </div>
           ) : (
             <div className="token-result-error">
-              {/* Ikona chyby */}
               <div className="token-result-header">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -255,9 +250,6 @@ const TrendingPage = () => {
     );
   }
 
-  // ================================
-  // ========== RENDER LIST =========
-  // ================================
   return (
     <div className="trending-container">
       <div className="topapp">
@@ -363,7 +355,7 @@ const TrendingPage = () => {
                 </div>
                 <div className="trending-coin-right">
                   <div className="trending-coin-marketcap">
-                    <span className="spansmall">USD Market Cap</span>
+                    <span className="spansmall">Market Cap</span>
                     <br />
                     <span className="trending-coin-marketcap-value">
                       {marketCapNumber > 0
